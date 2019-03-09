@@ -8,50 +8,23 @@
 * jrk grnd connected to arduino ground
 */
 
-#include <SoftwareSerial.h>
-SoftwareSerial mySerial(7, 8); // RX, TX, plug your control line into pin 8 and connect it to the RX pin on the JRK21v3
+#define BAUDRATE 9600
 
-int myTarget = 0; // target position, 0-4095 is the range of the JRK21V3 controller.
+#include "motor_control.h"
 
-//stuff used for input from pc
-char buffer[5];
-byte inByte = 0;
+MotorControl motorControl(BAUDRATE);
 
-void loadBufferFromSerial(char *buffer)
+// announcer for PC Serial output
+void announcePos(int position)
 {
-  int pointer = 0;
-
-  while (pointer < 4)
-  {                                  // accumulate 4 chars
-    buffer[pointer] = Serial.read(); // store in the buffer
-    pointer++;                       // move the pointer forward by 1
-  }
-
+  Serial.print("positiion set to ");
+  Serial.println(position);
   Serial.flush();
-}
-
-int stringBufferToTargetInt(char buffer[])
-{
-  int target = 0;
-
-  target = (buffer[0] - 48) * 1000 + (buffer[1] - 48) * 100 + (buffer[2] - 48) * 10 + (buffer[3] - 48);
-
-  //makes sure the target is within the bounds
-  if (target < 0)
-  {
-    target = 0;
-  }
-  else if (target > 4095)
-  {
-    target = 4095;
-  }
-  return target;
 }
 
 void setup()
 {
-  mySerial.begin(9600);
-  Serial.begin(9600);
+  Serial.begin(BAUDRATE);
   Serial.println("Initialized");
   Serial.flush(); // Give reader a chance to see the output.
 
@@ -61,6 +34,11 @@ void setup()
 
 void loop()
 {
+  static byte inByte = 0;
+  static int myTarget = 0; // target position, 0-4095 is the range of the JRK21V3 controller.
+
+  //stuff used for input from pc
+  static char buffer[5];
 
   if (Serial.available() > 0)
   {
@@ -75,13 +53,13 @@ void loop()
       loadBufferFromSerial(buffer);
       myTarget = stringBufferToTargetInt(buffer);
 
-      Move(myTarget);
+      motorControl.move(myTarget);
       announcePos(myTarget);
     }
     // Turn motor off if this character is received
     else if (inByte == '!')
     {
-      MotorOff();
+      motorControl.off();
     }
   }
 }
