@@ -45,7 +45,7 @@ void loop()
       loadBufferFromSerial(buffer);
       targetPosition = stringBufferToInt(buffer);
 
-      actualPosition = motorControl.move(targetPosition);
+      actualPosition = motorControl.setSpeed(targetPosition);
       announcePos(actualPosition);
     }
     // Turn motor off if this character is received
