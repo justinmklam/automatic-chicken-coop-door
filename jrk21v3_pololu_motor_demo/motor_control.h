@@ -23,7 +23,7 @@ class MotorControl
 {
   private:
     SoftwareSerial *serial;
-    
+
   public:
     MotorControl(uint32_t baudrate);
 

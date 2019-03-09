@@ -1,4 +1,3 @@
-
 /**
  * Announcer for PC Serial output
  */
