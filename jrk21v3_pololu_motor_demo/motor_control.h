@@ -9,8 +9,8 @@ class MotorControl
     SoftwareSerial *serial;
     
   public:
-    MotorControl(int baudrate);
-    void move(int x);
+    MotorControl(uint32_t baudrate);
+    uint16_t move(uint16_t x);
     void off();
 };
 

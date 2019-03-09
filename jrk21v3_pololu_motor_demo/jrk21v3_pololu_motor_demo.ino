@@ -9,18 +9,11 @@
 */
 
 #define BAUDRATE 9600
+#define BUFFER_SIZE 5   // ie. for input = #2000
 
 #include "motor_control.h"
 
 MotorControl motorControl(BAUDRATE);
-
-// announcer for PC Serial output
-void announcePos(int position)
-{
-  Serial.print("positiion set to ");
-  Serial.println(position);
-  Serial.flush();
-}
 
 void setup()
 {
@@ -28,22 +21,21 @@ void setup()
   Serial.println("Initialized");
   Serial.flush(); // Give reader a chance to see the output.
 
-  int myTarget = 0; //the health level at any point in time
   Serial.println("Enter '#' and 4 digit position level (#0000-#4095)");
 }
 
 void loop()
 {
-  static byte inByte = 0;
-  static int myTarget = 0; // target position, 0-4095 is the range of the JRK21V3 controller.
+  static uint8_t inByte = 0;
+  static uint16_t targetPosition = 0; // target position, 0-4095 is the range of the JRK21V3 controller.
+  static uint16_t actualPosition = 0;
 
   //stuff used for input from pc
-  static char buffer[5];
+  static char buffer[BUFFER_SIZE];
 
   if (Serial.available() > 0)
   {
     // read the incoming byte:
-
     inByte = Serial.read();
     delay(10);
 
@@ -51,15 +43,18 @@ void loop()
     if (inByte == '#')
     {
       loadBufferFromSerial(buffer);
-      myTarget = stringBufferToTargetInt(buffer);
+      targetPosition = stringBufferToInt(buffer);
 
-      motorControl.move(myTarget);
-      announcePos(myTarget);
+      actualPosition = motorControl.move(targetPosition);
+      announcePos(actualPosition);
     }
     // Turn motor off if this character is received
     else if (inByte == '!')
     {
       motorControl.off();
+
+      Serial.println("Motor off");
+      Serial.flush();
     }
   }
 }
