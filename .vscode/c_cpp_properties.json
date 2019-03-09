@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
+            "includePath": [
+                "/home/justin/arduino-1.8.8/tools/**",
+                "/home/justin/arduino-1.8.8/hardware/arduino/avr/**"
+            ],
+            "forcedInclude": [
+                "/home/justin/arduino-1.8.8/hardware/arduino/avr/cores/arduino/Arduino.h"
+            ]
+        }
+    ],
+    "version": 4
+}

@@ -1,0 +1,6 @@
+{
+    "programmer": "AVRISP mkII",
+    "board": "arduino:avr:uno",
+    "port": "/dev/ttyACM0",
+    "sketch": "jrk21v3_pololu_motor_demo/jrk21v3_pololu_motor_demo.ino"
+}
