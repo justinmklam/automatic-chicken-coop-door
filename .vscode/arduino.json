@@ -1,6 +1,7 @@
 {
     "programmer": "AVRISP mkII",
-    "board": "arduino:avr:uno",
-    "port": "/dev/ttyACM0",
-    "sketch": "jrk21v3_pololu_motor_demo/jrk21v3_pololu_motor_demo.ino"
+    "board": "arduino:avr:pro",
+    "port": "/dev/ttyUSB0",
+    "sketch": "chicken_door_controller/chicken_door_controller.ino",
+    "configuration": "cpu=16MHzatmega328"
 }
