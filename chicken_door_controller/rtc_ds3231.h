@@ -1,7 +1,7 @@
 #ifndef RTC_DS3231_H
 #define RTC_DS3231_H
 
-#include "RTClib.h"
+#include <RTClibExtended.h>
 
 class Rtc
 {
@@ -15,11 +15,17 @@ class Rtc
   public:
     Rtc();
 
+    void begin();
+
     //Writes current datestamp to the given buffer
     void datestamp(char *buffer);
 
     // Writes current timestamp to the given buffer
     void timestamp(char *buffer);
+
+    void clear_alarms();
+    void set_alarm(uint8_t alarm_number, uint8_t hour, uint8_t minute, uint8_t second);
+    void clear_alarm(uint8_t alarm_number);
 };
 
 #endif
