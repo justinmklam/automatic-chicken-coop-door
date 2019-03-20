@@ -26,7 +26,9 @@ void setup() {
   //switch-on the on-board led for 1 second for indicating that the sketch is ok and running
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, HIGH);
-  delay(1000);
+  // delay(1000);
+
+  Serial.begin(9600);
 
   //Initialize communication with the clock
   Wire.begin();
@@ -36,6 +38,13 @@ void setup() {
 
   //Set alarm1 every day at 18:33
   rtc.set_alarm(ALARM_NUMBER, 21, 35, 0);
+
+  Serial.println("starting");
+  Serial.println(rtc.get_datestamp_str());
+  Serial.println(rtc.get_timestamp_str());
+  Serial.println("end");
+
+  delay(1000);
 }
 
 //------------------------------------------------------------

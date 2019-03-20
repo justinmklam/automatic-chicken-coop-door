@@ -17,11 +17,8 @@ class Rtc
 
     void begin();
 
-    //Writes current datestamp to the given buffer
-    void datestamp(char *buffer);
-
-    // Writes current timestamp to the given buffer
-    void timestamp(char *buffer);
+    char *get_datestamp_str();
+    char *get_timestamp_str();
 
     void clear_alarms();
     void set_alarm(uint8_t alarm_number, uint8_t hour, uint8_t minute, uint8_t second);

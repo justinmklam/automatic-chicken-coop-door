@@ -18,8 +18,11 @@ void Rtc::begin()
     rtc->writeSqwPinMode(DS3231_OFF);
 }
 
-void Rtc::datestamp(char *buffer)
+char *Rtc::get_datestamp_str()
 {
+    // Size of string should be no more than 8 characters
+    char *buffer = (char*) malloc(sizeof(char) * 8);
+
     now = rtc->now();
 
     year = now.year();
@@ -27,16 +30,23 @@ void Rtc::datestamp(char *buffer)
     day = now.day();
 
     sprintf(buffer, "%d-%d-%d",year,month,day);
+
+    return buffer;
 }
 
-void Rtc::timestamp(char *buffer)
+char *Rtc::get_timestamp_str()
 {
+    // Size of string should be no more than 8 characters
+    char *buffer = (char*) malloc(sizeof(char) * 5);
+
     now = rtc->now();
 
     hour = now.hour();
     minute = now.minute();
 
     sprintf(buffer, "%d:%d",hour,minute);
+
+    return buffer;
 }
 
 void Rtc::clear_alarms()
