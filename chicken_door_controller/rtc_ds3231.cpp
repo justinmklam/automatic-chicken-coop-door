@@ -9,8 +9,10 @@ void Rtc::begin()
 {
     rtc->begin();
 
-    //set RTC date and time to COMPILE time
-    rtc->adjust(DateTime(__DATE__, __TIME__));
+    if (rtc->lostPower()) {
+        //set RTC date and time to COMPILE time
+        rtc->adjust(DateTime(__DATE__, __TIME__));
+    }
 
     //Set SQW pin to OFF (in my case it was set by default to 1Hz)
     //The output of the DS3231 INT pin is connected to this pin

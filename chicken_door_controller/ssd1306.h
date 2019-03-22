@@ -24,6 +24,7 @@ public:
     Ssd1306();
     void begin();
     void clear();
+    void turnOff();
     void println(char *text);
     void print(char *text);
 

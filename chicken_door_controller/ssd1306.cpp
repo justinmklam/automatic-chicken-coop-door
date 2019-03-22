@@ -22,6 +22,12 @@ void Ssd1306::clear()
     display->clearDisplay();
 }
 
+void Ssd1306::turnOff()
+{
+    display->clearDisplay();
+    display->display();
+}
+
 void Ssd1306::println(char *text)
 {
     display->setCursor(0,0);

@@ -38,7 +38,7 @@ void setup() {
   display.begin();
 
   //Set alarm1 every day at 18:33
-  rtc.set_alarm(ALARM_NUMBER, 21, 35, 0);
+  rtc.set_alarm(ALARM_NUMBER, 21, 49, 0);
 
   display.println(rtc.get_datestamp_str());
   display.print(rtc.get_timestamp_str());
@@ -53,6 +53,7 @@ void loop() {
 
   //On first loop we enter the sleep mode
   if (AlarmFlag == 0) {
+    display.turnOff();
     attachInterrupt(0, wakeUp, LOW);                       //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
     digitalWrite(ledPin, LOW);                             //switch-off the led for indicating that we enter the sleep mode
     ledStatus = 0;                                         //set the led status accordingly
@@ -74,5 +75,8 @@ void loop() {
     digitalWrite(ledPin, LOW);
   }
 
-  delay(500);
+  display.clear();
+  display.println(rtc.get_timestamp_str());
+
+  delay(1000);
 }
