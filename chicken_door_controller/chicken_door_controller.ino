@@ -34,8 +34,6 @@ void setup() {
   Wire.begin();
   rtc.begin();
 
-  rtc.clear_alarms();
-
   //Set alarm1 every day at 18:33
   rtc.set_alarm(ALARM_NUMBER, 21, 35, 0);
 

@@ -16,6 +16,8 @@ void Rtc::begin()
     //The output of the DS3231 INT pin is connected to this pin
     //It must be connected to arduino D2 pin for wake-up
     rtc->writeSqwPinMode(DS3231_OFF);
+
+    clear_alarms();
 }
 
 char *Rtc::get_datestamp_str()
