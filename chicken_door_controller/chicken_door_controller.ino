@@ -1,12 +1,14 @@
 #include <Wire.h>
-#include "rtc_ds3231.h"
 #include <LowPower.h>
+#include "ssd1306.h"
+#include "rtc_ds3231.h"
 
 #define ALARM_NUMBER 1
 #define wakePin 2    //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
 #define ledPin 13    //use arduino on-board led for indicating sleep or wakeup status
 
 Rtc rtc;      //we are using the DS3231 RTC
+Ssd1306 display;
 
 byte AlarmFlag = 0;
 byte ledStatus = 1;
@@ -33,14 +35,14 @@ void setup() {
   //Initialize communication with the clock
   Wire.begin();
   rtc.begin();
+  display.begin();
 
   //Set alarm1 every day at 18:33
   rtc.set_alarm(ALARM_NUMBER, 21, 35, 0);
 
-  Serial.println("starting");
-  Serial.println(rtc.get_datestamp_str());
-  Serial.println(rtc.get_timestamp_str());
-  Serial.println("end");
+  display.println(rtc.get_datestamp_str());
+  display.print(rtc.get_timestamp_str());
+  display.print(rtc.get_timestamp_str());
 
   delay(1000);
 }
