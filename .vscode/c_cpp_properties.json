@@ -8,9 +8,9 @@
             "cppStandard": "c++17",
             "intelliSenseMode": "clang-x64",
             "includePath": [
+                "/home/justin/Arduino/libraries/**",
                 "/home/justin/arduino-1.8.8/tools/**",
                 "/home/justin/arduino-1.8.8/hardware/arduino/avr/**",
-                "/home/justin/Arduino/libraries/**",
                 "/home/justin/arduino-1.8.8/libraries/**"
             ],
             "forcedInclude": [
