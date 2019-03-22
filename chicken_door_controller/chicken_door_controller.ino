@@ -2,13 +2,18 @@
 #include <LowPower.h>
 #include "ssd1306.h"
 #include "rtc_ds3231.h"
+#include "motor_tb6612.h"
 
+// RTC stuff
 #define ALARM_NUMBER 1
 #define wakePin 2    //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
 #define ledPin 13    //use arduino on-board led for indicating sleep or wakeup status
 
+
+
 Rtc rtc;      //we are using the DS3231 RTC
 Ssd1306 display;
+MotorTb6612 motor;
 
 byte AlarmFlag = 0;
 byte ledStatus = 1;
@@ -38,13 +43,13 @@ void setup() {
   display.begin();
 
   //Set alarm1 every day at 18:33
-  rtc.set_alarm(ALARM_NUMBER, 21, 49, 0);
+  rtc.set_alarm(ALARM_NUMBER, 22, 47, 0);
 
   display.println(rtc.get_datestamp_str());
   display.print(rtc.get_timestamp_str());
   display.print(rtc.get_timestamp_str());
 
-  delay(1000);
+  delay(2000);
 }
 
 //------------------------------------------------------------
@@ -77,6 +82,14 @@ void loop() {
 
   display.clear();
   display.println(rtc.get_timestamp_str());
-
   delay(1000);
+
+  motor.up();
+  delay(1000);
+  motor.down();
+  delay(1000);
+
+  motor.brake();
+  motor.standby();
+  delay(5000);
 }
