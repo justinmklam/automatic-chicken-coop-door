@@ -23,9 +23,9 @@ uint8_t buttonStateLeft = defaultButtonState;
 uint8_t buttonStateMid = defaultButtonState;
 uint8_t buttonStateRight = defaultButtonState;
 
-uint32_t startMillis;
 uint32_t currentMillis;
-const uint16_t period = 1000;
+uint32_t previousMillis;
+const uint16_t interval = 1000;
 
 uint8_t alarmFlag = 0;
 uint8_t ledStatus = 1;
@@ -86,11 +86,11 @@ void loop() {
     alarmFlag++;
   }
 
-  if (currentMillis - startMillis >= period) {
+  if (currentMillis - previousMillis >= interval) {
     display.clear();
     display.println(rtc.get_timestamp_str());
 
-    startMillis = currentMillis;
+    previousMillis += interval;
   }
 
   buttonStateLeft = digitalRead(buttonPinLeft);
