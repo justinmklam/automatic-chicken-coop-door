@@ -20,13 +20,28 @@ const uint8_t buttonPinRight = 12;
 const uint8_t defaultButtonState = HIGH;
 
 
-const uint16_t interval = 1000;
+const uint16_t intervalDisplayRefresh = 1000;
+const uint16_t intervalInactive = 10e3;
 
+void powerDown() {
+  display.sleep();
 
+  attachInterrupt(digitalPinToInterrupt(wakePin), wakeUpInterruptHandler, LOW);
+  attachInterrupt(digitalPinToInterrupt(buttonPinMiddle), wakeUpInterruptHandler, CHANGE);
+
+  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+}
+
+void wakeUp() {
+  display.wake();
+
+  detachInterrupt(digitalPinToInterrupt(wakePin));                                    //execution resumes from here after wake-up
+  detachInterrupt(digitalPinToInterrupt(buttonPinMiddle));
+}
 
 //-------------------------------------------------
 
-void wakeUp()        // here the interrupt is handled after wakeup
+void wakeUpInterruptHandler()        // here the interrupt is handled after wakeup
 {
 }
 
@@ -64,7 +79,8 @@ void loop() {
   static uint8_t buttonStateRight = defaultButtonState;
 
   static uint32_t currentMillis;
-  static uint32_t previousMillis;
+  static uint32_t previousMillisDisplay;
+  static uint32_t previousMillisSleep;
 
   static uint8_t alarmFlag = 0;
   static uint8_t ledStatus = 1;
@@ -75,31 +91,27 @@ void loop() {
 
   //On first loop we enter the sleep mode
   if (alarmFlag == 0) {
-    display.sleep();
-
     // Wake from either RTC alarm or button press
-    attachInterrupt(digitalPinToInterrupt(wakePin), wakeUp, LOW);
-    attachInterrupt(digitalPinToInterrupt(buttonPinMiddle), wakeUp, CHANGE);
+
     digitalWrite(ledPin, LOW);                             //switch-off the led for indicating that we enter the sleep mode
     ledStatus = 0;                                         //set the led status accordingly
-    LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);   //arduino enters sleep mode here
-    detachInterrupt(digitalPinToInterrupt(wakePin));                                    //execution resumes from here after wake-up
-    detachInterrupt(digitalPinToInterrupt(buttonPinMiddle));                                    //execution resumes from here after wake-up
 
-    display.wake();
+    powerDown();
+
+    wakeUp();
     //When exiting the sleep mode we clear the alarm
     rtc.clear_alarm(alarmNumber);
     alarmFlag++;
   }
 
-  if (currentMillis - previousMillis >= interval) {
+  if (currentMillis - previousMillisDisplay >= intervalDisplayRefresh) {
     display.clear();
     rtc.get_timestamp_str(bufferTimestamp);
     display.println(bufferTimestamp);
     display.print("hello");
     display.show();
 
-    previousMillis += interval;
+    previousMillisDisplay += intervalDisplayRefresh;
   }
 
   buttonStateLeft = digitalRead(buttonPinLeft);
@@ -122,6 +134,14 @@ void loop() {
   }
   else {
     motor.brake();
+  }
+
+  if (currentMillis - previousMillisSleep >= intervalInactive) {
+    previousMillisSleep += intervalInactive;
+
+    powerDown();
+
+    wakeUp();
   }
 
 }
