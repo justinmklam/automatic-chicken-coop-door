@@ -27,12 +27,17 @@ void Ssd1306::println(char *text)
     display->setCursor(0,0);
 
     display->println(text);
-    display->display();
+    // display->display();
 }
 
 void Ssd1306::print(char *text)
 {
     display->println(text);
+    // display->display();
+}
+
+void Ssd1306::show()
+{
     display->display();
 }
 

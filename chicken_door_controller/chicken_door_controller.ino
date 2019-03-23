@@ -19,16 +19,10 @@ const uint8_t buttonPinRight = 12;
 // Pullup resistor used
 const uint8_t defaultButtonState = HIGH;
 
-uint8_t buttonStateLeft = defaultButtonState;
-uint8_t buttonStateMid = defaultButtonState;
-uint8_t buttonStateRight = defaultButtonState;
 
-uint32_t currentMillis;
-uint32_t previousMillis;
 const uint16_t interval = 1000;
 
-uint8_t alarmFlag = 0;
-uint8_t ledStatus = 1;
+
 
 //-------------------------------------------------
 
@@ -56,15 +50,27 @@ void setup() {
   // //Set alarm1 every day at 18:33
   rtc.set_alarm(alarmNumber, 21, 06, 0);
 
-  display.println(rtc.get_datestamp_str());
-  display.print(rtc.get_timestamp_str());
+  // display.println(rtc.get_datestamp_str());
+  // display.print(rtc.get_timestamp_str());
 
-  delay(2000);
+  // delay(1000);
 }
 
 //------------------------------------------------------------
 
 void loop() {
+  static uint8_t buttonStateLeft = defaultButtonState;
+  static uint8_t buttonStateMid = defaultButtonState;
+  static uint8_t buttonStateRight = defaultButtonState;
+
+  static uint32_t currentMillis;
+  static uint32_t previousMillis;
+
+  static uint8_t alarmFlag = 0;
+  static uint8_t ledStatus = 1;
+
+  static char bufferTimestamp[10];
+
   currentMillis = millis();
 
   //On first loop we enter the sleep mode
@@ -88,7 +94,10 @@ void loop() {
 
   if (currentMillis - previousMillis >= interval) {
     display.clear();
-    display.println(rtc.get_timestamp_str());
+    rtc.get_timestamp_str(bufferTimestamp);
+    display.println(bufferTimestamp);
+    display.print("hello");
+    display.show();
 
     previousMillis += interval;
   }

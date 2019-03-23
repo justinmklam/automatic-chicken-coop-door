@@ -17,8 +17,8 @@ class Rtc
 
     void begin();
 
-    char *get_datestamp_str();
-    char *get_timestamp_str();
+    void get_datestamp_str(char *buffer);
+    void get_timestamp_str(char *buffer);
 
     void clear_alarms();
     void set_alarm(uint8_t alarm_number, uint8_t hour, uint8_t minute, uint8_t second);

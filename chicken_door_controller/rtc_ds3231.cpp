@@ -22,10 +22,10 @@ void Rtc::begin()
     clear_alarms();
 }
 
-char *Rtc::get_datestamp_str()
+void Rtc::get_datestamp_str(char *buffer)
 {
     // Size of string should be no more than 8 characters
-    char *buffer = (char*) malloc(sizeof(char) * 8);
+    // char *buffer = (char*) malloc(sizeof(char) * 8);
 
     now = rtc->now();
 
@@ -35,13 +35,13 @@ char *Rtc::get_datestamp_str()
 
     sprintf(buffer, "%d-%02d-%02d",year,month,day);
 
-    return buffer;
+    // return buffer;
 }
 
-char *Rtc::get_timestamp_str()
+void Rtc::get_timestamp_str(char *buffer)
 {
     // Size of string should be no more than 8 characters
-    char *buffer = (char*) malloc(sizeof(char) * 5);
+    // char *buffer = (char*) malloc(sizeof(char) * 5);
 
     now = rtc->now();
 
@@ -50,7 +50,7 @@ char *Rtc::get_timestamp_str()
 
     sprintf(buffer, "%02d:%02d",hour,minute);
 
-    return buffer;
+    // return buffer;
 }
 
 void Rtc::clear_alarms()
