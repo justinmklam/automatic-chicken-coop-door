@@ -33,7 +33,7 @@ char *Rtc::get_datestamp_str()
     month = now.month();
     day = now.day();
 
-    sprintf(buffer, "%d-%d-%d",year,month,day);
+    sprintf(buffer, "%d-%02d-%02d",year,month,day);
 
     return buffer;
 }
@@ -48,7 +48,7 @@ char *Rtc::get_timestamp_str()
     hour = now.hour();
     minute = now.minute();
 
-    sprintf(buffer, "%d:%d",hour,minute);
+    sprintf(buffer, "%02d:%02d",hour,minute);
 
     return buffer;
 }
