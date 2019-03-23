@@ -69,7 +69,7 @@ void loop() {
 
   //On first loop we enter the sleep mode
   if (alarmFlag == 0) {
-    display.turnOff();
+    display.sleep();
 
     // Wake from either RTC alarm or button press
     attachInterrupt(digitalPinToInterrupt(wakePin), wakeUp, LOW);
@@ -77,8 +77,10 @@ void loop() {
     digitalWrite(ledPin, LOW);                             //switch-off the led for indicating that we enter the sleep mode
     ledStatus = 0;                                         //set the led status accordingly
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);   //arduino enters sleep mode here
-    detachInterrupt(0);                                    //execution resumes from here after wake-up
+    detachInterrupt(digitalPinToInterrupt(wakePin));                                    //execution resumes from here after wake-up
+    detachInterrupt(digitalPinToInterrupt(buttonPinMiddle));                                    //execution resumes from here after wake-up
 
+    display.wake();
     //When exiting the sleep mode we clear the alarm
     rtc.clear_alarm(alarmNumber);
     alarmFlag++;
