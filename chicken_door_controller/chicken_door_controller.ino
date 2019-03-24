@@ -11,8 +11,8 @@ Rtc rtc;      //we are using the DS3231 RTC
 Ssd1306 display;
 MotorTb6612 motor;
 
-const uint8_t alarmNumber = 1;
-const uint8_t wakePin = 2;    //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
+const uint8_t alarmNumber = 1;  // two alarms available, but we just need one
+const uint8_t alarmPin = 2;    //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
 const uint8_t ledPin = 13;    //use arduino on-board led for indicating sleep or wakeup status
 
 const uint8_t buttonPinLeft = 10;
@@ -22,7 +22,7 @@ const uint8_t buttonPinRight = 12;
 // Pullup resistor used
 const uint8_t defaultButtonState = HIGH;
 
-const uint16_t intervalInactive = 10e3;
+const uint16_t intervalInactive = 100;
 
 /*************************************************************************/
 
@@ -61,12 +61,16 @@ class SleepMode : public TriggeredTask
 {
 public:
   SleepMode();
+  void enableSleepFromAlarm();
+  void enableSleepFromUserInactivity();
   virtual void run(uint32_t now);
 
 private:
-  bool sleepState;
-  void powerDown();
-  void wakeUp();
+  bool sleepFromAlarm = false;
+  bool sleepFromUserInactivity = false;
+
+  void powerDown(uint8_t pinNumber);
+  void wakeUp(uint8_t pinNumber);
   static void wakeUpInterruptHandler();
 
 };
@@ -74,30 +78,43 @@ private:
 SleepMode::SleepMode() : TriggeredTask()
 {
   //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
-  pinMode(wakePin, INPUT);
+  pinMode(alarmPin, INPUT);
   rtc.begin();
 }
 
 void SleepMode::run(uint32_t now)
 {
-  powerDown();
+  if (sleepFromAlarm) {
+    powerDown(alarmPin);
+    wakeUp(alarmPin);
 
-  wakeUp();
-  sleepState = false;
+    sleepFromAlarm = false;
+  }
+
+  else if (sleepFromUserInactivity) {
+    powerDown(buttonPinMiddle);
+    wakeUp(buttonPinMiddle);
+
+    sleepFromUserInactivity = false;
+  }
 
   resetRunnable();
 }
 
-void SleepMode::powerDown() {
+void SleepMode::enableSleepFromAlarm() {
+  sleepFromAlarm = true;
+}
+
+void SleepMode::enableSleepFromUserInactivity() {
+  sleepFromUserInactivity = true;
+}
+
+void SleepMode::powerDown(uint8_t pinNumber) {
   display.sleep();
 
+  // TODO: Not sure if this needs to be LOW for RTC alarm
   attachInterrupt(
-    digitalPinToInterrupt(wakePin),
-    wakeUpInterruptHandler,
-    LOW
-  );
-  attachInterrupt(
-    digitalPinToInterrupt(buttonPinMiddle),
+    digitalPinToInterrupt(pinNumber),
     wakeUpInterruptHandler,
     CHANGE
   );
@@ -105,11 +122,10 @@ void SleepMode::powerDown() {
   LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
 
-void SleepMode::wakeUp() {
+void SleepMode::wakeUp(uint8_t pinNumber) {
   display.wake();
 
-  detachInterrupt(digitalPinToInterrupt(wakePin));                                    //execution resumes from here after wake-up
-  detachInterrupt(digitalPinToInterrupt(buttonPinMiddle));
+  detachInterrupt(digitalPinToInterrupt(pinNumber));
 }
 
 void SleepMode::wakeUpInterruptHandler()        // here the interrupt is handled after wakeup
@@ -125,9 +141,17 @@ public:
   virtual void run(uint32_t now);
 
 private:
+  bool isButtonPressed = false;
+
   uint8_t buttonStateLeft = defaultButtonState;
   uint8_t buttonStateMid = defaultButtonState;
   uint8_t buttonStateRight = defaultButtonState;
+
+  uint32_t previousMillis;
+  uint32_t inactivityCounter = 0;
+
+  const uint16_t refreshInterval = 100;
+  // const uint16_t inactivityInterval =
 
   SleepMode *ptrSleep;
 };
@@ -139,6 +163,8 @@ UserInput::UserInput(SleepMode *_ptrSleep) :
     pinMode(buttonPinLeft, INPUT);
     pinMode(buttonPinMiddle, INPUT);
     pinMode(buttonPinRight, INPUT);
+
+    previousMillis = millis();
 }
 
 void UserInput::run(uint32_t now)
@@ -147,11 +173,13 @@ void UserInput::run(uint32_t now)
   buttonStateMid = digitalRead(buttonPinMiddle);
   buttonStateRight = digitalRead(buttonPinRight);
 
+  isButtonPressed = buttonStateLeft == LOW || buttonStateMid == LOW || buttonStateRight == LOW;
+
   if (buttonStateMid == LOW) {
     // turn LED on:
     digitalWrite(ledPin, HIGH);
 
-    ptrSleep->setRunnable();
+    // ptrSleep->setRunnable();
   } else {
     // turn LED off:
     digitalWrite(ledPin, LOW);
@@ -167,7 +195,24 @@ void UserInput::run(uint32_t now)
     motor.brake();
   }
 
-  incRunTime(100);
+  if (isButtonPressed) {
+    // previousMillis = millis();
+    inactivityCounter = 0;
+  }
+  else {
+    inactivityCounter++;
+
+    if (inactivityCounter >= intervalInactive) {
+      // previousMillis += intervalInactive;
+
+      inactivityCounter = 0;
+
+      ptrSleep->enableSleepFromUserInactivity();
+      ptrSleep->setRunnable();
+    }
+  }
+
+  incRunTime(refreshInterval);
 }
 
 /*************************************************************************/
@@ -179,7 +224,7 @@ void setup() {
   digitalWrite(ledPin, HIGH);
   delay(1000);
 
-  rtc.set_alarm(alarmNumber, 21, 06, 0);
+  rtc.set_alarm(alarmNumber, 12, 39, 0);
 }
 
 void loop() {
