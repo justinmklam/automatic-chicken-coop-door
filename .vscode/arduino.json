@@ -1,6 +1,7 @@
 {
     "programmer": "AVRISP mkII",
     "board": "arduino:avr:pro",
+    "output": "build",
     "port": "/dev/ttyUSB0",
     "sketch": "chicken_door_controller/chicken_door_controller.ino",
     "configuration": "cpu=16MHzatmega328"
