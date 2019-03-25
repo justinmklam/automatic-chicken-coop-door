@@ -31,8 +31,11 @@ class UpdateDisplay : public TimedTask
 public:
   UpdateDisplay();
   virtual void run(uint32_t now);
+  void pauseMainScreen();
+  void resumeMainScreen();
 
 private:
+  bool pauseUpdate = false;
   const uint16_t intervalDisplayRefresh = 1000;
 
   char bufferTimestamp[10];
@@ -44,13 +47,26 @@ UpdateDisplay::UpdateDisplay() : TimedTask(millis())
   display.println("Hello World");
 }
 
+void UpdateDisplay::pauseMainScreen()
+{
+  pauseUpdate = true;
+}
+
+void UpdateDisplay::resumeMainScreen()
+{
+  pauseUpdate = false;
+}
+
 void UpdateDisplay::run(uint32_t now)
 {
-  display.clear();
-  rtc.get_timestamp_str(bufferTimestamp);
-  display.println(bufferTimestamp);
-  display.print("hello");
-  display.show();
+  if (!pauseUpdate)
+  {
+    display.clear();
+    rtc.get_timestamp_str(bufferTimestamp);
+    display.println(bufferTimestamp);
+    display.print("hello");
+    display.show();
+  }
 
   incRunTime(intervalDisplayRefresh);
 }
@@ -137,10 +153,16 @@ void SleepMode::wakeUpInterruptHandler()        // here the interrupt is handled
 class UserInput : public TimedTask
 {
 public:
-  UserInput(SleepMode *_ptrSleep);
+  UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay);
   virtual void run(uint32_t now);
 
 private:
+
+  void checkInactivity(bool isButtonPressed);
+  uint8_t state = 0;
+  uint32_t distance = 0;
+
+  bool calibrationMode = false;
   bool isButtonPressed = false;
 
   uint8_t buttonStateLeft = defaultButtonState;
@@ -154,11 +176,13 @@ private:
   // const uint16_t inactivityInterval =
 
   SleepMode *ptrSleep;
+  UpdateDisplay *ptrDisplay;
 };
 
-UserInput::UserInput(SleepMode *_ptrSleep) :
+UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay) :
   TimedTask(millis()),
-  ptrSleep(_ptrSleep)
+  ptrSleep(_ptrSleep),
+  ptrDisplay(_ptrDisplay)
 {
     pinMode(buttonPinLeft, INPUT);
     pinMode(buttonPinMiddle, INPUT);
@@ -175,29 +199,99 @@ void UserInput::run(uint32_t now)
 
   isButtonPressed = buttonStateLeft == LOW || buttonStateMid == LOW || buttonStateRight == LOW;
 
-  if (buttonStateMid == LOW) {
-    // turn LED on:
-    digitalWrite(ledPin, HIGH);
+  if (calibrationMode == true) {
+    switch(state) {
+      default:
+        display.clear();
+        display.println("Move to up position");
+        display.print("Press middle when complete.");
+        display.show();
 
-    // ptrSleep->setRunnable();
-  } else {
-    // turn LED off:
-    digitalWrite(ledPin, LOW);
-  }
+        state++;
 
-  if (buttonStateLeft == LOW) {
-    motor.up();
-  }
-  else if (buttonStateRight == LOW) {
-    motor.down();
+        break;
+
+      case 1:
+        buttonStateLeft = digitalRead(buttonPinLeft);
+        buttonStateMid = digitalRead(buttonPinMiddle);
+        buttonStateRight = digitalRead(buttonPinRight);
+
+        if (buttonStateMid == LOW) {
+          distance = 0;
+
+          display.clear();
+          display.println("Move to down position");
+          display.show();
+
+          state++;
+        }
+
+        break;
+
+      case 2:
+        buttonStateLeft = digitalRead(buttonPinLeft);
+        buttonStateMid = digitalRead(buttonPinMiddle);
+        buttonStateRight = digitalRead(buttonPinRight);
+
+        if (buttonStateRight == LOW) {
+          distance++;
+        }
+        else if (buttonStateLeft == LOW) {
+          distance--;
+        }
+        else if (buttonStateMid == LOW) {
+          display.clear();
+          display.println("Done");
+          display.print(distance);
+          display.show();
+
+          state++;
+        }
+
+        break;
+
+      case 3:
+        state = 0;
+        calibrationMode = false;
+        ptrDisplay->resumeMainScreen();
+
+        break;
+    }
   }
   else {
-    motor.brake();
+    if (buttonStateMid == LOW) {
+      // turn LED on:
+
+      ptrDisplay->pauseMainScreen();
+      calibrationMode = true;
+      digitalWrite(ledPin, HIGH);
+
+      // ptrSleep->setRunnable();
+    } else {
+      // turn LED off:
+      digitalWrite(ledPin, LOW);
+    }
+
+    if (buttonStateLeft == LOW) {
+      motor.up();
+    }
+    else if (buttonStateRight == LOW) {
+      motor.down();
+    }
+    else {
+      motor.brake();
+    }
   }
 
+  checkInactivity(isButtonPressed);
+  incRunTime(refreshInterval);
+}
+
+void UserInput::checkInactivity(bool isButtonPressed)
+{
   if (isButtonPressed) {
-    // previousMillis = millis();
-    inactivityCounter = 0;
+  // previousMillis = millis();
+  inactivityCounter = 0;
   }
   else {
     inactivityCounter++;
@@ -211,8 +305,6 @@ void UserInput::run(uint32_t now)
       ptrSleep->setRunnable();
     }
   }
-
-  incRunTime(refreshInterval);
 }
 
 /*************************************************************************/
@@ -231,13 +323,15 @@ void loop() {
 
   UpdateDisplay updateDisplay;
   SleepMode sleepMode;
-  UserInput userInput(&sleepMode);
+  // DoorCalibration doorCalibration;
+  UserInput userInput(&sleepMode, &updateDisplay);
 
   // Order determines task priority
   Task *tasks[] = {
     &userInput,
     &updateDisplay,
-    &sleepMode
+    &sleepMode,
+    // &doorCalibration
   };
 
   TaskScheduler scheduler(tasks, NUM_TASKS(tasks));
