@@ -200,6 +200,10 @@ public:
 private:
 
   void checkInactivity(bool isButtonPressed);
+  void calibrateDoor();
+  void openDoor();
+  void closeDoor();
+
   uint8_t userState = 0;
   bool doorStateOpen = false;
 
@@ -246,100 +250,16 @@ void UserInput::run(uint32_t now)
   isButtonPressed = buttonStateLeft == LOW || buttonStateMid == LOW || buttonStateRight == LOW;
 
   if (calibrationMode == true) {
-
-      switch(userState) {
-        default:
-          display.clear();
-          display.println("Move up");
-          display.print("Next >");
-          display.show();
-
-          userState++;
-
-          break;
-
-        case 1:
-          buttonStateLeft = digitalRead(buttonPinLeft);
-          buttonStateMid = digitalRead(buttonPinMiddle);
-          buttonStateRight = digitalRead(buttonPinRight);
-
-          if (buttonStateLeft == LOW) {
-            motor.up();
-          }
-          else if (buttonStateRight == LOW) {
-            motor.down();
-          }
-          else {
-            motor.brake();
-          }
-
-          if (buttonStateMid == LOW) {
-            distance = 0;
-
-            display.clear();
-            display.println("Move down");
-            display.print("Next >");
-            display.show();
-
-            userState++;
-          }
-
-          break;
-
-        case 2:
-          buttonStateLeft = digitalRead(buttonPinLeft);
-          buttonStateMid = digitalRead(buttonPinMiddle);
-          buttonStateRight = digitalRead(buttonPinRight);
-
-          if (buttonStateLeft == LOW) {
-            motor.up();
-            distance++;
-          }
-          else if (buttonStateRight == LOW) {
-            if (distance > 0) {
-              motor.down();
-              distance--;
-            }
-            else {
-              motor.brake();
-            }
-          }
-          else {
-            motor.brake();
-          }
-
-          if (buttonStateMid == LOW) {
-            display.clear();
-            display.println("Complete");
-            display.print(distance);
-            display.show();
-
-            EEPROMWrite32bit(eepromAddrDistance, distance);
-
-            delay(1000);
-
-            doorStateOpen = false;
-            userState++;
-          }
-
-          break;
-
-        case 3:
-          userState = 0;
-          calibrationMode = false;
-          ptrDisplay->resumeMainScreen();
-
-          break;
-
-      }
+    calibrateDoor();
   }
   else {
     if (buttonStateMid == LOW) {
       calibrationButtonPressedCounter++;
 
       if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold) {
-        calibrationButtonPressedCounter = 0;
         ptrDisplay->pauseMainScreen();
+
+        calibrationButtonPressedCounter = 0;
         calibrationMode = true;
 
         display.clear();
@@ -353,28 +273,132 @@ void UserInput::run(uint32_t now)
       // turn LED off:
     }
 
-    if (buttonStateLeft == LOW && !doorStateOpen) {
-      // Open door
-      for (int i=0; i < distance; i++){
-        motor.up();
-        delay(refreshInterval);
-      }
-      motor.brake();
-      doorStateOpen = true;
+    if (buttonStateLeft == LOW) {
+      openDoor();
     }
-    else if (buttonStateRight == LOW && doorStateOpen) {
-      // Close door
-      for (int i=0; i < distance; i++){
-        motor.down();
-        delay(refreshInterval);
-      }
-      motor.brake();
-      doorStateOpen = false;
+    else if (buttonStateRight == LOW) {
+      closeDoor();
     }
   }
 
   checkInactivity(isButtonPressed);
   incRunTime(refreshInterval);
+}
+
+void UserInput::openDoor()
+{
+  if (doorStateOpen) {
+    return;
+  }
+
+  for (int i=0; i < distance; i++){
+    motor.up();
+    delay(refreshInterval);
+  }
+  motor.brake();
+  doorStateOpen = true;
+}
+void UserInput::closeDoor()
+{
+  if (!doorStateOpen) {
+    return;
+  }
+
+  for (int i=0; i < distance; i++){
+    motor.down();
+    delay(refreshInterval);
+  }
+  motor.brake();
+  doorStateOpen = false;
+}
+
+void UserInput::calibrateDoor()
+{
+  switch(userState) {
+    default:
+      display.clear();
+      display.println("Move up");
+      display.print("Next >");
+      display.show();
+
+      userState++;
+
+      break;
+
+    case 1:
+      buttonStateLeft = digitalRead(buttonPinLeft);
+      buttonStateMid = digitalRead(buttonPinMiddle);
+      buttonStateRight = digitalRead(buttonPinRight);
+
+      if (buttonStateLeft == LOW) {
+        motor.up();
+      }
+      else if (buttonStateRight == LOW) {
+        motor.down();
+      }
+      else {
+        motor.brake();
+      }
+
+      if (buttonStateMid == LOW) {
+        distance = 0;
+
+        display.clear();
+        display.println("Move down");
+        display.print("Next >");
+        display.show();
+
+        userState++;
+      }
+
+      break;
+
+    case 2:
+      buttonStateLeft = digitalRead(buttonPinLeft);
+      buttonStateMid = digitalRead(buttonPinMiddle);
+      buttonStateRight = digitalRead(buttonPinRight);
+
+      if (buttonStateLeft == LOW) {
+        motor.up();
+        distance++;
+      }
+      else if (buttonStateRight == LOW) {
+        if (distance > 0) {
+          motor.down();
+          distance--;
+        }
+        else {
+          motor.brake();
+        }
+      }
+      else {
+        motor.brake();
+      }
+
+      if (buttonStateMid == LOW) {
+        display.clear();
+        display.println("Complete");
+        display.print(distance);
+        display.show();
+
+        EEPROMWrite32bit(eepromAddrDistance, distance);
+
+        delay(1000);
+
+        doorStateOpen = false;
+        userState++;
+      }
+
+      break;
+
+    case 3:
+      userState = 0;
+      calibrationMode = false;
+      ptrDisplay->resumeMainScreen();
+
+      break;
+
+  }
 }
 
 void UserInput::checkInactivity(bool isButtonPressed)
