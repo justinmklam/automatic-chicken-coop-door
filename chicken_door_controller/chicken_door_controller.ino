@@ -3,6 +3,7 @@
 #include "EepromExtended.h"
 #include "Task.h"
 #include "TaskScheduler.h"
+#include "SunriseSunsetTimes.h"
 
 #include "ssd1306.h"
 #include "rtc_ds3231.h"
@@ -82,16 +83,19 @@ class SleepMode : public TriggeredTask
 {
 public:
   SleepMode();
-  void enableSleepFromAlarm();
+  void enableSleepFromAlarm(uint8_t hour, uint8_t minute);
   void enableSleepFromUserInactivity();
   virtual void run(uint32_t now);
 
 private:
+  bool enableSleep = false;
   bool sleepFromAlarm = false;
   bool sleepFromUserInactivity = false;
 
-  void powerDown(uint8_t pinNumber);
-  void wakeUp(uint8_t pinNumber);
+  void attachPinInterrupt(uint8_t pinNumber);
+  void detachPinInterrupt(uint8_t pinNumber);
+  void powerDown();
+  void wakeUp();
   static void wakeUpInterruptHandler();
 
 };
@@ -106,47 +110,64 @@ SleepMode::SleepMode() : TriggeredTask()
 void SleepMode::run(uint32_t now)
 {
   if (sleepFromAlarm) {
-    powerDown(ALARM_PIN);
-    wakeUp(ALARM_PIN);
+    attachPinInterrupt(ALARM_PIN);
 
-    sleepFromAlarm = false;
+    enableSleep = true;
+  }
+  if (sleepFromUserInactivity) {
+    attachPinInterrupt(BUTTON_PIN_MIDDLE);
+
+    enableSleep = true;
   }
 
-  else if (sleepFromUserInactivity) {
-    powerDown(BUTTON_PIN_MIDDLE);
-    wakeUp(BUTTON_PIN_MIDDLE);
+  if (enableSleep) {
+    powerDown();
+    wakeUp();   // Resumes here after sleep
 
-    sleepFromUserInactivity = false;
+    if (sleepFromAlarm) {
+      rtc.clear_alarm(ALARM_NUMBER);
+      detachPinInterrupt(ALARM_PIN);
+
+      sleepFromAlarm = false;
+    }
+    if (sleepFromUserInactivity) {
+      detachPinInterrupt(BUTTON_PIN_MIDDLE);
+      sleepFromUserInactivity = false;
+    }
   }
 
   resetRunnable();
 }
 
-void SleepMode::enableSleepFromAlarm() {
+void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute) {
   sleepFromAlarm = true;
+
+  rtc.set_alarm(ALARM_NUMBER, hour, minute, 0);
 }
 
 void SleepMode::enableSleepFromUserInactivity() {
   sleepFromUserInactivity = true;
 }
 
-void SleepMode::powerDown(uint8_t pinNumber) {
-  display.sleep();
-
-  // TODO: Not sure if this needs to be LOW for RTC alarm
+void SleepMode::attachPinInterrupt(uint8_t pinNumber) {
   attachInterrupt(
     digitalPinToInterrupt(pinNumber),
     wakeUpInterruptHandler,
     CHANGE
   );
+}
 
+void SleepMode::detachPinInterrupt(uint8_t pinNumber) {
+  detachInterrupt(digitalPinToInterrupt(pinNumber));
+}
+
+void SleepMode::powerDown() {
+  display.sleep();
   LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
 
-void SleepMode::wakeUp(uint8_t pinNumber) {
+void SleepMode::wakeUp() {
   display.wake();
-
-  detachInterrupt(digitalPinToInterrupt(pinNumber));
 }
 
 void SleepMode::wakeUpInterruptHandler()        // here the interrupt is handled after wakeup
@@ -223,6 +244,59 @@ void DoorControl::close()
   }
   motor.brake();
   stateDoorOpen = false;
+}
+
+/*************************************************************************/
+
+class SunriseSunsetAlarms : public TimedTask
+{
+public:
+  SunriseSunsetAlarms(SleepMode *_ptrSleep, DoorControl *_ptrDoorControl);
+  void setAlarm();
+  virtual void run(uint32_t now);
+
+private:
+  const uint8_t sunriseBufferHour = 1;
+  const uint8_t sunsetBufferHour = 2;
+  SleepMode *ptrSleep;
+  DoorControl *ptrDoorControl;
+};
+
+SunriseSunsetAlarms::SunriseSunsetAlarms(SleepMode *_ptrSleep, DoorControl *_ptrDoorControl)
+  : TimedTask(millis()),
+  ptrSleep(_ptrSleep),
+  ptrDoorControl(_ptrDoorControl)
+{
+  Serial.begin(9600);
+}
+
+void SunriseSunsetAlarms::run(uint32_t now)
+{
+  setAlarm();
+  incRunTime(1000);
+}
+
+void SunriseSunsetAlarms::setAlarm()
+{
+  uint8_t currentMonthIndex = rtc.now().month() - 1;
+  uint8_t currentHour = rtc.now().hour();
+  uint8_t alarmHour, alarmMinute;
+
+  if (currentHour < SUNRISE_TIMES[currentMonthIndex].hour || currentHour > SUNSET_TIMES[currentMonthIndex].hour) {
+    alarmHour = SUNRISE_TIMES[currentMonthIndex].hour - sunriseBufferHour;
+    alarmMinute = SUNRISE_TIMES[currentMonthIndex].minute;
+  }
+  else {
+    alarmHour = SUNSET_TIMES[currentMonthIndex].hour + sunsetBufferHour;
+    alarmMinute = SUNSET_TIMES[currentMonthIndex].minute;
+  }
+
+  Serial.print("Alarm ");
+  Serial.print(alarmHour);
+  Serial.print(":");
+  Serial.println(alarmMinute);
+
+  ptrSleep->enableSleepFromAlarm(alarmHour, alarmMinute);
 }
 
 /*************************************************************************/
@@ -433,13 +507,7 @@ void UserInput::checkInactivity(bool isButtonPressed)
 /*************************************************************************/
 
 void setup() {
-
-  //switch-on the on-board led for 1 second for indicating that the sketch is ok and running
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
-  delay(1000);
-
-  rtc.set_alarm(ALARM_NUMBER, 12, 39, 0);
+  rtc.set_alarm(ALARM_NUMBER, 13, 02, 0);
 }
 
 void loop() {
@@ -447,7 +515,7 @@ void loop() {
   UpdateDisplay updateDisplay;
   SleepMode sleepMode;
   DoorControl doorControl;
-  // DoorCalibration doorCalibration;
+  SunriseSunsetAlarms sunAlarms(&sleepMode, &doorControl);
   UserInput userInput(&sleepMode, &updateDisplay, &doorControl);
 
   // Order determines task priority
@@ -455,8 +523,8 @@ void loop() {
     &userInput,
     &updateDisplay,
     &sleepMode,
-    &doorControl
-    // &doorCalibration
+    &doorControl,
+    &sunAlarms
   };
 
   TaskScheduler scheduler(tasks, NUM_TASKS(tasks));
