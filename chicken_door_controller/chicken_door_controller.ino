@@ -4,6 +4,7 @@
 #include "Task.h"
 #include "TaskScheduler.h"
 #include "SunriseSunsetTimes.h"
+#include "Logger.h"
 
 #include "ssd1306.h"
 #include "rtc_ds3231.h"
@@ -49,17 +50,19 @@ private:
 
 UpdateDisplay::UpdateDisplay() : TimedTask(millis())
 {
+  loggerln("UpdateDisplay: Constructed");
   display.begin();
-  display.println("Hello World");
 }
 
 void UpdateDisplay::pauseMainScreen()
 {
+  loggerln("UpdateDisplay.pauseMainScreen");
   pauseUpdate = true;
 }
 
 void UpdateDisplay::resumeMainScreen()
 {
+  loggerln("UpdateDisplay.resumeMainScreen");
   pauseUpdate = false;
 }
 
@@ -102,6 +105,7 @@ private:
 
 SleepMode::SleepMode() : TriggeredTask()
 {
+  loggerln("SleepMode: Constructed");
   //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
   pinMode(ALARM_PIN, INPUT);
   rtc.begin();
@@ -140,16 +144,26 @@ void SleepMode::run(uint32_t now)
 }
 
 void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute) {
+  logger("SleepMode.enableSleepFromAlarm: ");
+  logger(hour);
+  logger(":");
+  loggerln(minute);
+
   sleepFromAlarm = true;
 
   rtc.set_alarm(ALARM_NUMBER, hour, minute, 0);
 }
 
 void SleepMode::enableSleepFromUserInactivity() {
+  loggerln("SleepMode.enableSleepFromUserInactivity");
+
   sleepFromUserInactivity = true;
 }
 
 void SleepMode::attachPinInterrupt(uint8_t pinNumber) {
+  logger("SleepMode.attachPinInterrupt: ");
+  loggerln(pinNumber);
+
   attachInterrupt(
     digitalPinToInterrupt(pinNumber),
     wakeUpInterruptHandler,
@@ -158,10 +172,15 @@ void SleepMode::attachPinInterrupt(uint8_t pinNumber) {
 }
 
 void SleepMode::detachPinInterrupt(uint8_t pinNumber) {
+  logger("SleepMode.detachPinInterrupt: ");
+  loggerln(pinNumber);
+
   detachInterrupt(digitalPinToInterrupt(pinNumber));
 }
 
 void SleepMode::powerDown() {
+  loggerln("SleepMode.powerDown");
+
   display.sleep();
   LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
@@ -193,6 +212,7 @@ private:
 
 DoorControl::DoorControl() : TriggeredTask()
 {
+  loggerln("DoorControl: Constructed");
 }
 
 void DoorControl::run(uint32_t now)
@@ -211,16 +231,20 @@ void DoorControl::run(uint32_t now)
 
 void DoorControl::setOpen()
 {
+  loggerln("DoorControl.setOpen");
   setDoorOpen = true;
 }
 
 void DoorControl::setClose()
 {
+  loggerln("DoorControl.setClose");
   setDoorClose = true;
 }
 
 void DoorControl::open()
 {
+  loggerln("DoorControl.open");
+
   if (stateDoorOpen) {
     return;
   }
@@ -234,6 +258,8 @@ void DoorControl::open()
 
 void DoorControl::close()
 {
+  loggerln("DoorControl.close");
+
   if (!stateDoorOpen) {
     return;
   }
@@ -268,7 +294,7 @@ SunriseSunsetAlarms::SunriseSunsetAlarms(SleepMode *_ptrSleep, DoorControl *_ptr
   ptrSleep(_ptrSleep),
   ptrDoorControl(_ptrDoorControl)
 {
-  Serial.begin(9600);
+  loggerln("SunriseSunsetAlarms: Constructed");
 }
 
 void SunriseSunsetAlarms::run(uint32_t now)
@@ -279,6 +305,8 @@ void SunriseSunsetAlarms::run(uint32_t now)
 
 void SunriseSunsetAlarms::setAlarm()
 {
+  loggerln("SunriseSunsetAlarms.setAlarm");
+
   uint8_t currentMonthIndex = rtc.now().month() - 1;
   uint8_t currentHour = rtc.now().hour();
   uint8_t currentMinute = rtc.now().minute();
@@ -295,11 +323,6 @@ void SunriseSunsetAlarms::setAlarm()
     alarmHour = SUNSET_TIMES[currentMonthIndex].hour + sunsetBufferHour;
     alarmMinute = SUNSET_TIMES[currentMonthIndex].minute;
   }
-
-  Serial.print("Alarm ");
-  Serial.print(alarmHour);
-  Serial.print(":");
-  Serial.println(alarmMinute);
 
   ptrSleep->enableSleepFromAlarm(alarmHour, alarmMinute);
 }
@@ -347,6 +370,8 @@ UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay, DoorContr
   ptrDisplay(_ptrDisplay),
   ptrDoorControl(_ptrDoorControl)
 {
+  loggerln("UserInput: Constructed");
+
     pinMode(BUTTON_PIN_LEFT, INPUT);
     pinMode(BUTTON_PIN_MIDDLE, INPUT);
     pinMode(BUTTON_PIN_RIGHT, INPUT);
@@ -492,14 +517,13 @@ void UserInput::calibrateDoor()
 void UserInput::checkInactivity(bool isButtonPressed)
 {
   if (isButtonPressed) {
-  // previousMillis = millis();
-  inactivityCounter = 0;
+    inactivityCounter = 0;
   }
   else {
     inactivityCounter++;
 
     if (inactivityCounter >= intervalInactive) {
-      // previousMillis += intervalInactive;
+      loggerln("UserInput.checkInactivity: Detected");
 
       inactivityCounter = 0;
 
@@ -512,10 +536,12 @@ void UserInput::checkInactivity(bool isButtonPressed)
 /*************************************************************************/
 
 void setup() {
-  rtc.set_alarm(ALARM_NUMBER, 13, 02, 0);
+  loggerBegin();
 }
 
 void loop() {
+
+  loggerln("main: Starting");
 
   UpdateDisplay updateDisplay;
   SleepMode sleepMode;
@@ -534,6 +560,7 @@ void loop() {
 
   TaskScheduler scheduler(tasks, NUM_TASKS(tasks));
 
+  loggerln("main: Running tasks");
   scheduler.runTasks();
 
 }
