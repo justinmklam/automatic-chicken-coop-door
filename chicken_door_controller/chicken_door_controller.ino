@@ -215,7 +215,9 @@ private:
 
   uint32_t previousMillis;
   uint32_t inactivityCounter = 0;
+  uint32_t calibrationButtonPressedCounter = 0;
 
+  const uint16_t calibrationButtonPressedThreshold = 20;
   const uint16_t refreshInterval = 100;
   // const uint16_t inactivityInterval =
 
@@ -244,103 +246,111 @@ void UserInput::run(uint32_t now)
   isButtonPressed = buttonStateLeft == LOW || buttonStateMid == LOW || buttonStateRight == LOW;
 
   if (calibrationMode == true) {
-    switch(userState) {
-      default:
-        display.clear();
-        display.println("Door up");
-        display.print("Next >");
-        display.show();
 
-        userState++;
-
-        break;
-
-      case 1:
-        buttonStateLeft = digitalRead(buttonPinLeft);
-        buttonStateMid = digitalRead(buttonPinMiddle);
-        buttonStateRight = digitalRead(buttonPinRight);
-
-        if (buttonStateLeft == LOW) {
-          motor.up();
-        }
-        else if (buttonStateRight == LOW) {
-          motor.down();
-        }
-        else {
-          motor.brake();
-        }
-
-        if (buttonStateMid == LOW) {
-          distance = 0;
-
+      switch(userState) {
+        default:
           display.clear();
-          display.println("Door down");
+          display.println("Move up");
           display.print("Next >");
           display.show();
 
           userState++;
-        }
 
-        break;
+          break;
 
-      case 2:
-        buttonStateLeft = digitalRead(buttonPinLeft);
-        buttonStateMid = digitalRead(buttonPinMiddle);
-        buttonStateRight = digitalRead(buttonPinRight);
+        case 1:
+          buttonStateLeft = digitalRead(buttonPinLeft);
+          buttonStateMid = digitalRead(buttonPinMiddle);
+          buttonStateRight = digitalRead(buttonPinRight);
 
-        if (buttonStateLeft == LOW) {
-          motor.up();
-          distance++;
-        }
-        else if (buttonStateRight == LOW) {
-          motor.down();
-          if (distance > 0) {
-            distance--;
+          if (buttonStateLeft == LOW) {
+            motor.up();
+          }
+          else if (buttonStateRight == LOW) {
+            motor.down();
           }
           else {
-            distance = 0;
+            motor.brake();
           }
-        }
-        else {
-          motor.brake();
-        }
 
-        if (buttonStateMid == LOW) {
-          display.clear();
-          display.println("Done");
-          display.print(distance);
-          display.show();
+          if (buttonStateMid == LOW) {
+            distance = 0;
 
-          EEPROMWrite32bit(eepromAddrDistance, distance);
+            display.clear();
+            display.println("Move down");
+            display.print("Next >");
+            display.show();
 
-          delay(1000);
+            userState++;
+          }
 
-          doorStateOpen = false;
-          userState++;
-        }
+          break;
 
-        break;
+        case 2:
+          buttonStateLeft = digitalRead(buttonPinLeft);
+          buttonStateMid = digitalRead(buttonPinMiddle);
+          buttonStateRight = digitalRead(buttonPinRight);
 
-      case 3:
-        userState = 0;
-        calibrationMode = false;
-        ptrDisplay->resumeMainScreen();
+          if (buttonStateLeft == LOW) {
+            motor.up();
+            distance++;
+          }
+          else if (buttonStateRight == LOW) {
+            if (distance > 0) {
+              motor.down();
+              distance--;
+            }
+            else {
+              motor.brake();
+            }
+          }
+          else {
+            motor.brake();
+          }
 
-        break;
-    }
+          if (buttonStateMid == LOW) {
+            display.clear();
+            display.println("Complete");
+            display.print(distance);
+            display.show();
+
+            EEPROMWrite32bit(eepromAddrDistance, distance);
+
+            delay(1000);
+
+            doorStateOpen = false;
+            userState++;
+          }
+
+          break;
+
+        case 3:
+          userState = 0;
+          calibrationMode = false;
+          ptrDisplay->resumeMainScreen();
+
+          break;
+
+      }
   }
   else {
     if (buttonStateMid == LOW) {
-      // turn LED on:
+      calibrationButtonPressedCounter++;
 
-      ptrDisplay->pauseMainScreen();
-      calibrationMode = true;
-      digitalWrite(ledPin, HIGH);
+      if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold) {
+        calibrationButtonPressedCounter = 0;
+        ptrDisplay->pauseMainScreen();
+        calibrationMode = true;
+
+        display.clear();
+        display.println("Calibrate");
+        display.show();
+        delay(2000);
+      }
 
       // ptrSleep->setRunnable();
     } else {
       // turn LED off:
-      digitalWrite(ledPin, LOW);
     }
 
     if (buttonStateLeft == LOW && !doorStateOpen) {
