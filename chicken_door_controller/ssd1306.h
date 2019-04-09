@@ -26,6 +26,7 @@ public:
     void clear();
     void println(char *text);
     void print(char *text);
+    void print(int value);
     void show();
     void sleep();
     void wake();

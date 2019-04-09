@@ -1,4 +1,5 @@
 #include <LowPower.h>
+#include <EEPROM.h>
 
 #include "Task.h"
 #include "TaskScheduler.h"
@@ -159,8 +160,11 @@ public:
 private:
 
   void checkInactivity(bool isButtonPressed);
-  uint8_t state = 0;
-  uint32_t distance = 0;
+  uint8_t userState = 0;
+  bool doorStateOpen = false;
+
+  int eepromAddr = 0;
+  uint32_t distance = EEPROM.read(eepromAddr);
 
   bool calibrationMode = false;
   bool isButtonPressed = false;
@@ -200,14 +204,14 @@ void UserInput::run(uint32_t now)
   isButtonPressed = buttonStateLeft == LOW || buttonStateMid == LOW || buttonStateRight == LOW;
 
   if (calibrationMode == true) {
-    switch(state) {
+    switch(userState) {
       default:
         display.clear();
-        display.println("Move to up position");
-        display.print("Press middle when complete.");
+        display.println("Door up");
+        display.print("Next >");
         display.show();
 
-        state++;
+        userState++;
 
         break;
 
@@ -216,14 +220,25 @@ void UserInput::run(uint32_t now)
         buttonStateMid = digitalRead(buttonPinMiddle);
         buttonStateRight = digitalRead(buttonPinRight);
 
+        if (buttonStateLeft == LOW) {
+          motor.up();
+        }
+        else if (buttonStateRight == LOW) {
+          motor.down();
+        }
+        else {
+          motor.brake();
+        }
+
         if (buttonStateMid == LOW) {
           distance = 0;
 
           display.clear();
-          display.println("Move to down position");
+          display.println("Door down");
+          display.print("Next >");
           display.show();
 
-          state++;
+          userState++;
         }
 
         break;
@@ -233,25 +248,38 @@ void UserInput::run(uint32_t now)
         buttonStateMid = digitalRead(buttonPinMiddle);
         buttonStateRight = digitalRead(buttonPinRight);
 
-        if (buttonStateRight == LOW) {
+        if (buttonStateLeft == LOW) {
+          motor.up();
           distance++;
         }
-        else if (buttonStateLeft == LOW) {
-          distance--;
+        else if (buttonStateRight == LOW) {
+          motor.down();
+          if (distance > 0) {
+            distance--;
+          }
+          else {
+            distance = 0;
+          }
         }
-        else if (buttonStateMid == LOW) {
+        else {
+          motor.brake();
+        }
+
+        if (buttonStateMid == LOW) {
           display.clear();
           display.println("Done");
           display.print(distance);
           display.show();
 
-          state++;
+          EEPROM.write(eepromAddr, distance);
+
+          userState++;
         }
 
         break;
 
       case 3:
-        state = 0;
+        userState = 0;
         calibrationMode = false;
         ptrDisplay->resumeMainScreen();
 
@@ -272,14 +300,23 @@ void UserInput::run(uint32_t now)
       digitalWrite(ledPin, LOW);
     }
 
-    if (buttonStateLeft == LOW) {
-      motor.up();
-    }
-    else if (buttonStateRight == LOW) {
-      motor.down();
-    }
-    else {
+    if (buttonStateLeft == LOW && !doorStateOpen) {
+      // Open door
+      for (int i=0; i < distance; i++){
+        motor.up();
+        delay(refreshInterval);
+      }
       motor.brake();
+      doorStateOpen = true;
+    }
+    else if (buttonStateRight == LOW && doorStateOpen) {
+      // Close door
+      for (int i=0; i < distance; i++){
+        motor.down();
+        delay(refreshInterval);
+      }
+      motor.brake();
+      doorStateOpen = false;
     }
   }
 
