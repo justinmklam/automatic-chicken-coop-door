@@ -256,7 +256,8 @@ public:
   virtual void run(uint32_t now);
 
 private:
-  const uint8_t sunriseBufferHour = 1;
+  const uint32_t alarmUpdateIntervalMs = 1000;
+  const uint8_t sunriseBufferHour = 0;
   const uint8_t sunsetBufferHour = 2;
   SleepMode *ptrSleep;
   DoorControl *ptrDoorControl;
@@ -273,16 +274,20 @@ SunriseSunsetAlarms::SunriseSunsetAlarms(SleepMode *_ptrSleep, DoorControl *_ptr
 void SunriseSunsetAlarms::run(uint32_t now)
 {
   setAlarm();
-  incRunTime(1000);
+  incRunTime(alarmUpdateIntervalMs);
 }
 
 void SunriseSunsetAlarms::setAlarm()
 {
   uint8_t currentMonthIndex = rtc.now().month() - 1;
   uint8_t currentHour = rtc.now().hour();
+  uint8_t currentMinute = rtc.now().minute();
   uint8_t alarmHour, alarmMinute;
 
-  if (currentHour < SUNRISE_TIMES[currentMonthIndex].hour || currentHour > SUNSET_TIMES[currentMonthIndex].hour) {
+  bool isBeforeSunrise = (currentHour < SUNRISE_TIMES[currentMonthIndex].hour) && (currentMinute < SUNRISE_TIMES[currentMonthIndex].minute);
+  bool isAfterSunset = (currentHour > SUNSET_TIMES[currentMonthIndex].hour) && (currentMinute > SUNSET_TIMES[currentMonthIndex].minute);
+
+  if (isBeforeSunrise || isAfterSunset) {
     alarmHour = SUNRISE_TIMES[currentMonthIndex].hour - sunriseBufferHour;
     alarmMinute = SUNRISE_TIMES[currentMonthIndex].minute;
   }
