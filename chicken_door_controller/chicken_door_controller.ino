@@ -26,6 +26,7 @@ const uint8_t BUTTON_PIN_RIGHT = 12;
 const uint8_t BUTTON_STATE_DEFAULT = HIGH;
 const uint8_t BUTTON_STATE_PRESSED = LOW;
 
+const uint8_t EEPROM_ADDR_DOOR_STATUS = 0;
 const uint8_t EEPROM_ADDR_DOOR_DISTANCE = 1;
 
 uint32_t DOOR_OPEN_CLOSE_DISTANCE = EEPROMRead32bit(EEPROM_ADDR_DOOR_DISTANCE);
@@ -98,7 +99,7 @@ public:
   void setClose();
   virtual void run(uint32_t now);
 private:
-  bool stateDoorOpen = false;
+  bool stateDoorOpen = EEPROMRead8bit(EEPROM_ADDR_DOOR_STATUS);
   bool setDoorOpen = false;
   bool setDoorClose = false;
 };
@@ -147,6 +148,7 @@ void DoorControl::open()
   }
   motor.brake();
   stateDoorOpen = true;
+  EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, stateDoorOpen);
 }
 
 void DoorControl::close()
@@ -163,6 +165,7 @@ void DoorControl::close()
   }
   motor.brake();
   stateDoorOpen = false;
+  EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, stateDoorOpen);
 }
 
 /*************************************************************************/
