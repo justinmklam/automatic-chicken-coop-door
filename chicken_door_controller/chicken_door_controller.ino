@@ -82,119 +82,6 @@ void UpdateDisplay::run(uint32_t now)
 
 /*************************************************************************/
 
-class SleepMode : public TriggeredTask
-{
-public:
-  SleepMode();
-  void enableSleepFromAlarm(uint8_t hour, uint8_t minute);
-  void enableSleepFromUserInactivity();
-  virtual void run(uint32_t now);
-
-private:
-  bool enableSleep = false;
-  bool sleepFromAlarm = false;
-  bool sleepFromUserInactivity = false;
-
-  void attachPinInterrupt(uint8_t pinNumber);
-  void detachPinInterrupt(uint8_t pinNumber);
-  void powerDown();
-  void wakeUp();
-  static void wakeUpInterruptHandler();
-
-};
-
-SleepMode::SleepMode() : TriggeredTask()
-{
-  loggerln("SleepMode: Constructed");
-  //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
-  pinMode(ALARM_PIN, INPUT);
-  rtc.begin();
-}
-
-void SleepMode::run(uint32_t now)
-{
-  if (sleepFromAlarm) {
-    attachPinInterrupt(ALARM_PIN);
-
-    enableSleep = true;
-  }
-  if (sleepFromUserInactivity) {
-    attachPinInterrupt(BUTTON_PIN_MIDDLE);
-
-    enableSleep = true;
-  }
-
-  if (enableSleep) {
-    powerDown();
-    wakeUp();   // Resumes here after sleep
-
-    if (sleepFromAlarm) {
-      rtc.clear_alarm(ALARM_NUMBER);
-      detachPinInterrupt(ALARM_PIN);
-
-      sleepFromAlarm = false;
-    }
-    if (sleepFromUserInactivity) {
-      detachPinInterrupt(BUTTON_PIN_MIDDLE);
-      sleepFromUserInactivity = false;
-    }
-  }
-
-  resetRunnable();
-}
-
-void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute) {
-  logger("SleepMode.enableSleepFromAlarm: ");
-  logger(hour);
-  logger(":");
-  loggerln(minute);
-
-  sleepFromAlarm = true;
-
-  rtc.set_alarm(ALARM_NUMBER, hour, minute, 0);
-}
-
-void SleepMode::enableSleepFromUserInactivity() {
-  loggerln("SleepMode.enableSleepFromUserInactivity");
-
-  sleepFromUserInactivity = true;
-}
-
-void SleepMode::attachPinInterrupt(uint8_t pinNumber) {
-  logger("SleepMode.attachPinInterrupt: ");
-  loggerln(pinNumber);
-
-  attachInterrupt(
-    digitalPinToInterrupt(pinNumber),
-    wakeUpInterruptHandler,
-    CHANGE
-  );
-}
-
-void SleepMode::detachPinInterrupt(uint8_t pinNumber) {
-  logger("SleepMode.detachPinInterrupt: ");
-  loggerln(pinNumber);
-
-  detachInterrupt(digitalPinToInterrupt(pinNumber));
-}
-
-void SleepMode::powerDown() {
-  loggerln("SleepMode.powerDown");
-
-  display.sleep();
-  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
-}
-
-void SleepMode::wakeUp() {
-  display.wake();
-}
-
-void SleepMode::wakeUpInterruptHandler()        // here the interrupt is handled after wakeup
-{
-}
-
-/*************************************************************************/
-
 class DoorControl : public TriggeredTask
 {
 public:
@@ -274,25 +161,174 @@ void DoorControl::close()
 
 /*************************************************************************/
 
+class SleepMode : public TriggeredTask
+{
+public:
+  SleepMode(DoorControl *_ptrDoorControl);
+  void enableSleepFromAlarm(uint8_t hour, uint8_t minute);
+  void enableSleepFromUserInactivity();
+  virtual void run(uint32_t now);
+
+private:
+  bool isAlarmTriggered = false;
+  bool enableSleep = false;
+  bool sleepFromAlarm = false;
+  bool sleepFromUserInactivity = false;
+
+  uint8_t alarmHour, alarmMinute;
+
+  bool controlDoorFromAlarm();
+  void attachPinInterrupt(uint8_t pinNumber);
+  void detachPinInterrupt(uint8_t pinNumber);
+  void powerDown();
+  void wakeUp();
+  static void wakeUpInterruptHandler();
+
+  DoorControl *ptrDoorControl;
+};
+
+SleepMode::SleepMode(DoorControl *_ptrDoorControl) : TriggeredTask(),
+  ptrDoorControl(_ptrDoorControl)
+
+{
+  loggerln("SleepMode: Constructed");
+  //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
+  pinMode(ALARM_PIN, INPUT);
+  rtc.begin();
+}
+
+void SleepMode::run(uint32_t now)
+{
+  // NO LOG STATEMENTS ALLOWED HERE
+
+  if (sleepFromAlarm) {
+    attachPinInterrupt(ALARM_PIN);
+
+    enableSleep = true;
+  }
+  if (sleepFromUserInactivity) {
+    attachPinInterrupt(BUTTON_PIN_MIDDLE);
+
+    enableSleep = true;
+  }
+
+  if (enableSleep) {
+    powerDown();
+    wakeUp();   // Resumes here after sleep
+
+    if (sleepFromAlarm) {
+      isAlarmTriggered = controlDoorFromAlarm();
+
+      if (isAlarmTriggered) {
+        rtc.clear_alarm(ALARM_NUMBER);
+        detachPinInterrupt(ALARM_PIN);
+
+        sleepFromAlarm = false;
+      }
+    }
+    if (sleepFromUserInactivity) {
+      detachPinInterrupt(BUTTON_PIN_MIDDLE);
+      sleepFromUserInactivity = false;
+    }
+  }
+
+  resetRunnable();
+}
+
+void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute) {
+  logger("SleepMode.enableSleepFromAlarm: ");
+  logger(hour);
+  logger(":");
+  loggerln(minute);
+
+  alarmHour = hour;
+  alarmMinute = minute;
+  sleepFromAlarm = true;
+
+  rtc.set_alarm(ALARM_NUMBER, hour, minute, 0);
+}
+
+bool SleepMode::controlDoorFromAlarm() {
+  // NO LOG STATEMENTS ALLOWED HERE
+
+  bool alarmTriggered = false;
+
+  // Check if woken up by alarm
+  if (rtc.now().hour() == alarmHour && rtc.now().minute() == alarmMinute) {
+    // loggerln("SleepMode.controlDoorFromAlarm: Alarm triggered");
+
+    alarmTriggered = true;
+    // Before noon is morning, so open door
+    if (rtc.now().hour() < 12) {
+      ptrDoorControl->setOpen();
+      ptrDoorControl->setRunnable();
+    }
+    else {
+      ptrDoorControl->setClose();
+      ptrDoorControl->setRunnable();
+    }
+  }
+  return alarmTriggered;
+}
+
+void SleepMode::enableSleepFromUserInactivity() {
+  loggerln("SleepMode.enableSleepFromUserInactivity");
+
+  sleepFromUserInactivity = true;
+}
+
+void SleepMode::attachPinInterrupt(uint8_t pinNumber) {
+  logger("SleepMode.attachPinInterrupt: ");
+  loggerln(pinNumber);
+
+  attachInterrupt(
+    digitalPinToInterrupt(pinNumber),
+    wakeUpInterruptHandler,
+    CHANGE
+  );
+}
+
+void SleepMode::detachPinInterrupt(uint8_t pinNumber) {
+  logger("SleepMode.detachPinInterrupt: ");
+  loggerln(pinNumber);
+
+  detachInterrupt(digitalPinToInterrupt(pinNumber));
+}
+
+void SleepMode::powerDown() {
+  loggerln("SleepMode.powerDown");
+
+  display.sleep();
+  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+}
+
+void SleepMode::wakeUp() {
+  display.wake();
+}
+
+void SleepMode::wakeUpInterruptHandler()        // here the interrupt is handled after wakeup
+{
+}
+
+/*************************************************************************/
+
 class SunriseSunsetAlarms : public TimedTask
 {
 public:
-  SunriseSunsetAlarms(SleepMode *_ptrSleep, DoorControl *_ptrDoorControl);
+  SunriseSunsetAlarms(SleepMode *_ptrSleep);
   void setAlarm();
   virtual void run(uint32_t now);
 
 private:
   const uint32_t alarmUpdateIntervalMs = 1000;
   const uint8_t sunriseBufferHour = 0;
-  const uint8_t sunsetBufferHour = 2;
+  const uint8_t sunsetBufferHour = 0;
   SleepMode *ptrSleep;
-  DoorControl *ptrDoorControl;
 };
 
-SunriseSunsetAlarms::SunriseSunsetAlarms(SleepMode *_ptrSleep, DoorControl *_ptrDoorControl)
+SunriseSunsetAlarms::SunriseSunsetAlarms(SleepMode *_ptrSleep)
   : TimedTask(millis()),
-  ptrSleep(_ptrSleep),
-  ptrDoorControl(_ptrDoorControl)
+  ptrSleep(_ptrSleep)
 {
   loggerln("SunriseSunsetAlarms: Constructed");
 }
@@ -544,9 +580,9 @@ void loop() {
   loggerln("main: Starting");
 
   UpdateDisplay updateDisplay;
-  SleepMode sleepMode;
   DoorControl doorControl;
-  SunriseSunsetAlarms sunAlarms(&sleepMode, &doorControl);
+  SleepMode sleepMode(&doorControl);
+  SunriseSunsetAlarms sunAlarms(&sleepMode);
   UserInput userInput(&sleepMode, &updateDisplay, &doorControl);
 
   // Order determines task priority
