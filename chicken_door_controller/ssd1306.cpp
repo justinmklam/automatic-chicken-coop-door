@@ -29,14 +29,19 @@ void Ssd1306::println(char *text)
     display->println(text);
 }
 
+void Ssd1306::println()
+{
+    display->println();
+}
+
 void Ssd1306::print(char *text)
 {
-    display->println(text);
+    display->print(text);
 }
 
 void Ssd1306::print(int value)
 {
-    display->println(value);
+    display->print(value);
 }
 
 void Ssd1306::show()

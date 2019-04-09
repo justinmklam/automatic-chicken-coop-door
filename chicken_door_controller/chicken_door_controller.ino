@@ -31,6 +31,9 @@ const uint8_t EEPROM_ADDR_DOOR_DISTANCE = 1;
 uint32_t DOOR_OPEN_CLOSE_DISTANCE = EEPROMRead32bit(EEPROM_ADDR_DOOR_DISTANCE);
 const uint16_t REFRESH_INTERVAL_MS = 100;
 
+int NEXT_ALARM_HOUR = 0;
+int NEXT_ALARM_MINUTE = 0;
+
 /*************************************************************************/
 
 class UpdateDisplay : public TimedTask
@@ -73,7 +76,10 @@ void UpdateDisplay::run(uint32_t now)
     display.clear();
     rtc.get_timestamp_str(bufferTimestamp);
     display.println(bufferTimestamp);
-    display.print("hello");
+    display.print(NEXT_ALARM_HOUR);
+    display.print(":");
+    display.print(NEXT_ALARM_MINUTE);
+    display.print(" ALRM");
     display.show();
   }
 
@@ -243,6 +249,8 @@ void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute) {
 
   alarmHour = hour;
   alarmMinute = minute;
+  NEXT_ALARM_HOUR = hour;
+  NEXT_ALARM_MINUTE = minute;
   sleepFromAlarm = true;
 
   rtc.set_alarm(ALARM_NUMBER, hour, minute, 0);
@@ -322,7 +330,7 @@ public:
 private:
   const uint32_t alarmUpdateIntervalMs = 1000;
   const uint8_t sunriseBufferHour = 0;
-  const uint8_t sunsetBufferHour = 0;
+  const uint8_t sunsetBufferHour = 2;
   SleepMode *ptrSleep;
 };
 
@@ -467,7 +475,7 @@ void UserInput::calibrateDoor()
     default:
       display.clear();
       display.println("Move up");
-      display.print("Next >");
+      display.println("Next >");
       display.show();
 
       userState++;
@@ -494,7 +502,7 @@ void UserInput::calibrateDoor()
 
         display.clear();
         display.println("Move down");
-        display.print("Next >");
+        display.println("Next >");
         display.show();
 
         userState++;

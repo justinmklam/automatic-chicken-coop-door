@@ -25,6 +25,7 @@ public:
     void begin();
     void clear();
     void println(char *text);
+    void println();
     void print(char *text);
     void print(int value);
     void show();
