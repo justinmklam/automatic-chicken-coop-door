@@ -1,3 +1,5 @@
+// Takes about 2088 bytes
+
 #define SERIAL_LOG_ENABLED true
 
 void loggerBegin() {
