@@ -12,18 +12,17 @@ Rtc rtc;      //we are using the DS3231 RTC
 Ssd1306 display;
 MotorTb6612 motor;
 
-const uint8_t alarmNumber = 1;  // two alarms available, but we just need one
-const uint8_t alarmPin = 2;    //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
-const uint8_t ledPin = 13;    //use arduino on-board led for indicating sleep or wakeup status
+const uint8_t ALARM_NUMBER = 1;  // two alarms available, but we just need one
+const uint8_t ALARM_PIN = 2;    //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
+const uint8_t LED_PIN = 13;    //use arduino on-board led for indicating sleep or wakeup status
 
-const uint8_t buttonPinLeft = 10;
-const uint8_t buttonPinMiddle = 3;
-const uint8_t buttonPinRight = 12;
+const uint8_t BUTTON_PIN_LEFT = 10;
+const uint8_t BUTTON_PIN_MIDDLE = 3;
+const uint8_t BUTTON_PIN_RIGHT = 12;
 
 // Pullup resistor used
-const uint8_t defaultButtonState = HIGH;
-
-const uint16_t intervalInactive = 100;
+const uint8_t BUTTON_STATE_DEFAULT = HIGH;
+const uint8_t BUTTON_STATE_PRESSED = LOW;
 
 /*************************************************************************/
 
@@ -95,22 +94,22 @@ private:
 SleepMode::SleepMode() : TriggeredTask()
 {
   //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
-  pinMode(alarmPin, INPUT);
+  pinMode(ALARM_PIN, INPUT);
   rtc.begin();
 }
 
 void SleepMode::run(uint32_t now)
 {
   if (sleepFromAlarm) {
-    powerDown(alarmPin);
-    wakeUp(alarmPin);
+    powerDown(ALARM_PIN);
+    wakeUp(ALARM_PIN);
 
     sleepFromAlarm = false;
   }
 
   else if (sleepFromUserInactivity) {
-    powerDown(buttonPinMiddle);
-    wakeUp(buttonPinMiddle);
+    powerDown(BUTTON_PIN_MIDDLE);
+    wakeUp(BUTTON_PIN_MIDDLE);
 
     sleepFromUserInactivity = false;
   }
@@ -173,16 +172,18 @@ private:
   bool calibrationMode = false;
   bool isButtonPressed = false;
 
-  uint8_t buttonStateLeft = defaultButtonState;
-  uint8_t buttonStateMid = defaultButtonState;
-  uint8_t buttonStateRight = defaultButtonState;
+  uint8_t buttonStateLeft = BUTTON_STATE_DEFAULT;
+  uint8_t buttonStateMid = BUTTON_STATE_DEFAULT;
+  uint8_t buttonStateRight = BUTTON_STATE_DEFAULT;
 
   uint32_t previousMillis;
   uint32_t inactivityCounter = 0;
   uint32_t calibrationButtonPressedCounter = 0;
 
   const uint16_t calibrationButtonPressedThreshold = 20;
+  const uint16_t intervalInactive = 100;
   const uint16_t refreshInterval = 100;
+
   // const uint16_t inactivityInterval =
 
   SleepMode *ptrSleep;
@@ -194,26 +195,26 @@ UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay) :
   ptrSleep(_ptrSleep),
   ptrDisplay(_ptrDisplay)
 {
-    pinMode(buttonPinLeft, INPUT);
-    pinMode(buttonPinMiddle, INPUT);
-    pinMode(buttonPinRight, INPUT);
+    pinMode(BUTTON_PIN_LEFT, INPUT);
+    pinMode(BUTTON_PIN_MIDDLE, INPUT);
+    pinMode(BUTTON_PIN_RIGHT, INPUT);
 
     previousMillis = millis();
 }
 
 void UserInput::run(uint32_t now)
 {
-  buttonStateLeft = digitalRead(buttonPinLeft);
-  buttonStateMid = digitalRead(buttonPinMiddle);
-  buttonStateRight = digitalRead(buttonPinRight);
+  buttonStateLeft = digitalRead(BUTTON_PIN_LEFT);
+  buttonStateMid = digitalRead(BUTTON_PIN_MIDDLE);
+  buttonStateRight = digitalRead(BUTTON_PIN_RIGHT);
 
-  isButtonPressed = buttonStateLeft == LOW || buttonStateMid == LOW || buttonStateRight == LOW;
+  isButtonPressed = buttonStateLeft == BUTTON_STATE_PRESSED || buttonStateMid == BUTTON_STATE_PRESSED || buttonStateRight == BUTTON_STATE_PRESSED;
 
   if (calibrationMode == true) {
     calibrateDoor();
   }
   else {
-    if (buttonStateMid == LOW) {
+    if (buttonStateMid == BUTTON_STATE_PRESSED) {
       calibrationButtonPressedCounter++;
 
       if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold) {
@@ -233,10 +234,10 @@ void UserInput::run(uint32_t now)
       // turn LED off:
     }
 
-    if (buttonStateLeft == LOW) {
+    if (buttonStateLeft == BUTTON_STATE_PRESSED) {
       openDoor();
     }
-    else if (buttonStateRight == LOW) {
+    else if (buttonStateRight == BUTTON_STATE_PRESSED) {
       closeDoor();
     }
   }
@@ -286,21 +287,21 @@ void UserInput::calibrateDoor()
       break;
 
     case 1:
-      buttonStateLeft = digitalRead(buttonPinLeft);
-      buttonStateMid = digitalRead(buttonPinMiddle);
-      buttonStateRight = digitalRead(buttonPinRight);
+      buttonStateLeft = digitalRead(BUTTON_PIN_LEFT);
+      buttonStateMid = digitalRead(BUTTON_PIN_MIDDLE);
+      buttonStateRight = digitalRead(BUTTON_PIN_RIGHT);
 
-      if (buttonStateLeft == LOW) {
+      if (buttonStateLeft == BUTTON_STATE_PRESSED) {
         motor.up();
       }
-      else if (buttonStateRight == LOW) {
+      else if (buttonStateRight == BUTTON_STATE_PRESSED) {
         motor.down();
       }
       else {
         motor.brake();
       }
 
-      if (buttonStateMid == LOW) {
+      if (buttonStateMid == BUTTON_STATE_PRESSED) {
         distance = 0;
 
         display.clear();
@@ -314,15 +315,15 @@ void UserInput::calibrateDoor()
       break;
 
     case 2:
-      buttonStateLeft = digitalRead(buttonPinLeft);
-      buttonStateMid = digitalRead(buttonPinMiddle);
-      buttonStateRight = digitalRead(buttonPinRight);
+      buttonStateLeft = digitalRead(BUTTON_PIN_LEFT);
+      buttonStateMid = digitalRead(BUTTON_PIN_MIDDLE);
+      buttonStateRight = digitalRead(BUTTON_PIN_RIGHT);
 
-      if (buttonStateLeft == LOW) {
+      if (buttonStateLeft == BUTTON_STATE_PRESSED) {
         motor.up();
         distance++;
       }
-      else if (buttonStateRight == LOW) {
+      else if (buttonStateRight == BUTTON_STATE_PRESSED) {
         if (distance > 0) {
           motor.down();
           distance--;
@@ -335,7 +336,7 @@ void UserInput::calibrateDoor()
         motor.brake();
       }
 
-      if (buttonStateMid == LOW) {
+      if (buttonStateMid == BUTTON_STATE_PRESSED) {
         display.clear();
         display.println("Complete");
         display.print(distance);
@@ -386,11 +387,11 @@ void UserInput::checkInactivity(bool isButtonPressed)
 void setup() {
 
   //switch-on the on-board led for 1 second for indicating that the sketch is ok and running
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, HIGH);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
   delay(1000);
 
-  rtc.set_alarm(alarmNumber, 12, 39, 0);
+  rtc.set_alarm(ALARM_NUMBER, 12, 39, 0);
 }
 
 void loop() {
