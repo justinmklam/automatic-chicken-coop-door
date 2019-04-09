@@ -24,6 +24,11 @@ const uint8_t BUTTON_PIN_RIGHT = 12;
 const uint8_t BUTTON_STATE_DEFAULT = HIGH;
 const uint8_t BUTTON_STATE_PRESSED = LOW;
 
+const uint8_t EEPROM_ADDR_DOOR_DISTANCE = 1;
+
+uint32_t DOOR_OPEN_CLOSE_DISTANCE = EEPROMRead32bit(EEPROM_ADDR_DOOR_DISTANCE);
+const uint16_t REFRESH_INTERVAL_MS = 100;
+
 /*************************************************************************/
 
 class UpdateDisplay : public TimedTask
@@ -150,24 +155,91 @@ void SleepMode::wakeUpInterruptHandler()        // here the interrupt is handled
 
 /*************************************************************************/
 
+class DoorControl : public TriggeredTask
+{
+public:
+  DoorControl();
+  void open();
+  void close();
+  void setOpen();
+  void setClose();
+  virtual void run(uint32_t now);
+private:
+  bool stateDoorOpen = false;
+  bool setDoorOpen = false;
+  bool setDoorClose = false;
+};
+
+DoorControl::DoorControl() : TriggeredTask()
+{
+}
+
+void DoorControl::run(uint32_t now)
+{
+  if (setDoorOpen) {
+    open();
+    setDoorOpen = false;
+  }
+  else if (setDoorClose) {
+    close();
+    setDoorClose = false;
+  }
+
+  resetRunnable();
+}
+
+void DoorControl::setOpen()
+{
+  setDoorOpen = true;
+}
+
+void DoorControl::setClose()
+{
+  setDoorClose = true;
+}
+
+void DoorControl::open()
+{
+  if (stateDoorOpen) {
+    return;
+  }
+  for (int i=0; i < DOOR_OPEN_CLOSE_DISTANCE; i++){
+    motor.up();
+    delay(REFRESH_INTERVAL_MS);
+  }
+  motor.brake();
+  stateDoorOpen = true;
+}
+
+void DoorControl::close()
+{
+  if (!stateDoorOpen) {
+    return;
+  }
+
+  for (int i=0; i < DOOR_OPEN_CLOSE_DISTANCE; i++){
+    motor.down();
+    delay(REFRESH_INTERVAL_MS);
+  }
+  motor.brake();
+  stateDoorOpen = false;
+}
+
+/*************************************************************************/
+
 class UserInput : public TimedTask
 {
 public:
-  UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay);
+  UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay, DoorControl *_ptrDoorControl);
   virtual void run(uint32_t now);
 
 private:
 
   void checkInactivity(bool isButtonPressed);
   void calibrateDoor();
-  void openDoor();
-  void closeDoor();
 
   uint8_t userState = 0;
   bool doorStateOpen = false;
-
-  const uint8_t eepromAddrDistance = 1;
-  uint32_t distance = EEPROMRead32bit(eepromAddrDistance);
 
   bool calibrationMode = false;
   bool isButtonPressed = false;
@@ -182,18 +254,19 @@ private:
 
   const uint16_t calibrationButtonPressedThreshold = 20;
   const uint16_t intervalInactive = 100;
-  const uint16_t refreshInterval = 100;
 
   // const uint16_t inactivityInterval =
 
   SleepMode *ptrSleep;
   UpdateDisplay *ptrDisplay;
+  DoorControl *ptrDoorControl;
 };
 
-UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay) :
+UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay, DoorControl *_ptrDoorControl) :
   TimedTask(millis()),
   ptrSleep(_ptrSleep),
-  ptrDisplay(_ptrDisplay)
+  ptrDisplay(_ptrDisplay),
+  ptrDoorControl(_ptrDoorControl)
 {
     pinMode(BUTTON_PIN_LEFT, INPUT);
     pinMode(BUTTON_PIN_MIDDLE, INPUT);
@@ -235,42 +308,17 @@ void UserInput::run(uint32_t now)
     }
 
     if (buttonStateLeft == BUTTON_STATE_PRESSED) {
-      openDoor();
+      ptrDoorControl->setOpen();
+      ptrDoorControl->setRunnable();
     }
     else if (buttonStateRight == BUTTON_STATE_PRESSED) {
-      closeDoor();
+      ptrDoorControl->setClose();
+      ptrDoorControl->setRunnable();
     }
   }
 
   checkInactivity(isButtonPressed);
-  incRunTime(refreshInterval);
-}
-
-void UserInput::openDoor()
-{
-  if (doorStateOpen) {
-    return;
-  }
-
-  for (int i=0; i < distance; i++){
-    motor.up();
-    delay(refreshInterval);
-  }
-  motor.brake();
-  doorStateOpen = true;
-}
-void UserInput::closeDoor()
-{
-  if (!doorStateOpen) {
-    return;
-  }
-
-  for (int i=0; i < distance; i++){
-    motor.down();
-    delay(refreshInterval);
-  }
-  motor.brake();
-  doorStateOpen = false;
+  incRunTime(REFRESH_INTERVAL_MS);
 }
 
 void UserInput::calibrateDoor()
@@ -302,7 +350,7 @@ void UserInput::calibrateDoor()
       }
 
       if (buttonStateMid == BUTTON_STATE_PRESSED) {
-        distance = 0;
+        DOOR_OPEN_CLOSE_DISTANCE = 0;
 
         display.clear();
         display.println("Move down");
@@ -321,12 +369,12 @@ void UserInput::calibrateDoor()
 
       if (buttonStateLeft == BUTTON_STATE_PRESSED) {
         motor.up();
-        distance++;
+        DOOR_OPEN_CLOSE_DISTANCE++;
       }
       else if (buttonStateRight == BUTTON_STATE_PRESSED) {
-        if (distance > 0) {
+        if (DOOR_OPEN_CLOSE_DISTANCE > 0) {
           motor.down();
-          distance--;
+          DOOR_OPEN_CLOSE_DISTANCE--;
         }
         else {
           motor.brake();
@@ -339,10 +387,10 @@ void UserInput::calibrateDoor()
       if (buttonStateMid == BUTTON_STATE_PRESSED) {
         display.clear();
         display.println("Complete");
-        display.print(distance);
+        display.print(DOOR_OPEN_CLOSE_DISTANCE);
         display.show();
 
-        EEPROMWrite32bit(eepromAddrDistance, distance);
+        EEPROMWrite32bit(EEPROM_ADDR_DOOR_DISTANCE, DOOR_OPEN_CLOSE_DISTANCE);
 
         delay(1000);
 
@@ -398,14 +446,16 @@ void loop() {
 
   UpdateDisplay updateDisplay;
   SleepMode sleepMode;
+  DoorControl doorControl;
   // DoorCalibration doorCalibration;
-  UserInput userInput(&sleepMode, &updateDisplay);
+  UserInput userInput(&sleepMode, &updateDisplay, &doorControl);
 
   // Order determines task priority
   Task *tasks[] = {
     &userInput,
     &updateDisplay,
     &sleepMode,
+    &doorControl
     // &doorCalibration
   };
 
