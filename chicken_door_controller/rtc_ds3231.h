@@ -7,7 +7,7 @@ class Rtc
 {
   private:
     RTC_DS3231 *rtc;
-    DateTime now;
+    DateTime current;
 
     uint8_t month, day, hour, minute;
     uint16_t year;
@@ -17,6 +17,7 @@ class Rtc
 
     void begin();
 
+    DateTime now();
     void get_datestamp_str(char *buffer);
     void get_timestamp_str(char *buffer);
 

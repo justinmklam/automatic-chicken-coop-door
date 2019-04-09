@@ -22,16 +22,21 @@ void Rtc::begin()
     clear_alarms();
 }
 
+DateTime Rtc::now()
+{
+    return rtc->now();
+}
+
 void Rtc::get_datestamp_str(char *buffer)
 {
     // Size of string should be no more than 8 characters
     // char *buffer = (char*) malloc(sizeof(char) * 8);
 
-    now = rtc->now();
+    current = rtc->now();
 
-    year = now.year();
-    month = now.month();
-    day = now.day();
+    year = current.year();
+    month = current.month();
+    day = current.day();
 
     sprintf(buffer, "%d-%02d-%02d",year,month,day);
 
@@ -43,10 +48,10 @@ void Rtc::get_timestamp_str(char *buffer)
     // Size of string should be no more than 8 characters
     // char *buffer = (char*) malloc(sizeof(char) * 5);
 
-    now = rtc->now();
+    current = rtc->now();
 
-    hour = now.hour();
-    minute = now.minute();
+    hour = current.hour();
+    minute = current.minute();
 
     sprintf(buffer, "%02d:%02d",hour,minute);
 
