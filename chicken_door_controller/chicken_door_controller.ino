@@ -139,25 +139,26 @@ void DoorControl::setClose()
 
 void DoorControl::open()
 {
-  loggerln("DoorControl.open");
-
   if (stateDoorOpen) {
+    loggerln("DoorControl: Already open");
     return;
   }
+
   for (int i=0; i < DOOR_OPEN_CLOSE_DISTANCE; i++){
     motor.up();
     delay(REFRESH_INTERVAL_MS);
   }
+
   motor.brake();
   stateDoorOpen = true;
   EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, stateDoorOpen);
+  loggerln("DoorControl: Opened");
 }
 
 void DoorControl::close()
 {
-  loggerln("DoorControl.close");
-
   if (!stateDoorOpen) {
+    loggerln("DoorControl: Already closed");
     return;
   }
 
@@ -165,9 +166,11 @@ void DoorControl::close()
     motor.down();
     delay(REFRESH_INTERVAL_MS);
   }
+
   motor.brake();
   stateDoorOpen = false;
   EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, stateDoorOpen);
+  loggerln("DoorControl: Closed");
 }
 
 /*************************************************************************/
@@ -268,8 +271,6 @@ bool SleepMode::controlDoorFromAlarm() {
 
   // Check if woken up by alarm
   if (rtc.now().hour() == alarmHour && rtc.now().minute() == alarmMinute) {
-    // loggerln("SleepMode.controlDoorFromAlarm: Alarm triggered");
-
     alarmTriggered = true;
     // Before noon is morning, so open door
     if (rtc.now().hour() < 12) {
@@ -354,7 +355,7 @@ void SunriseSunsetAlarms::run(uint32_t now)
 
 void SunriseSunsetAlarms::setAlarm()
 {
-  loggerln("SunriseSunsetAlarms.setAlarm");
+  // loggerln("SunriseSunsetAlarms.setAlarm");
 
   uint8_t currentMonthIndex = rtc.now().month() - 1;
   uint8_t currentHour = rtc.now().hour();
