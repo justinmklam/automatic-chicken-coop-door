@@ -356,7 +356,7 @@ public:
   virtual void run(uint32_t now);
 
 private:
-  const uint32_t alarmUpdateIntervalMs = 1000;
+  const uint32_t alarmUpdateIntervalMs = 5000;
   const uint8_t sunriseBufferHour = 0;
   const uint8_t sunsetBufferHour = 2;
   SleepMode *ptrSleep;
