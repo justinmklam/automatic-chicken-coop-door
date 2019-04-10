@@ -1,4 +1,4 @@
-#include "motor_tb6612.h"
+#include "Motor_TB6612.h"
 
 MotorTb6612::MotorTb6612()
 {

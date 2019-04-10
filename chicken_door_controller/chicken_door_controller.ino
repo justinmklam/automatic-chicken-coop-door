@@ -6,9 +6,9 @@
 #include "SunriseSunsetTimes.h"
 #include "Logger.h"
 
-#include "ssd1306.h"
-#include "rtc_ds3231.h"
-#include "motor_tb6612.h"
+#include "Display_SSD1306.h"
+#include "Rtc_DS3231.h"
+#include "Motor_TB6612.h"
 
 Rtc rtc;
 Ssd1306 display;
