@@ -49,6 +49,8 @@ private:
   bool pauseUpdate = false;
   const uint16_t intervalDisplayRefresh = 1000;
 
+  // TODO: This buffer is currently causing weird artifacts to show. Reducing to 5
+  // causes it to crash (but artifacts are gone), but >6 is functional. Weird.
   char bufferTimestamp[10];
 };
 
