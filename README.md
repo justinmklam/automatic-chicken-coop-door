@@ -1,5 +1,8 @@
 # Automatic Chicken Coop Door
-Automatic chicken coop door for my backyard egg layers.
+
+Automatic chicken coop door for my backyard egg layers. Modeled after the commercially available [Chicken Guard](https://www.chickenguard.com/).
+
+![](Images/IMG_20190303_172957.jpg)
 
 ## Parts List
 - Arduino Pro Mini
