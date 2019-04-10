@@ -21,11 +21,11 @@ struct SunriseSunsetTimes SUNRISE_TIMES[12] = {
 
 struct SunriseSunsetTimes SUNSET_TIMES[12] = {
     { 16, 24  },    // January
-    { 17, 8  },    // February
+    { 17, 8   },    // February
     { 17, 55  },    // March
     { 19, 44  },    // April
     { 20, 29  },    // May
-    { 21, 9  },    // June
+    { 21, 9   },    // June
     { 21, 21  },    // July
     { 20, 52  },    // August
     { 19, 54  },    // September
