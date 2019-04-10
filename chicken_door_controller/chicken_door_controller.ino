@@ -478,7 +478,7 @@ void UserInput::calibrateDoor()
     default:
       display.clear();
       display.println("Move up");
-      display.println("Next >");
+      display.print("Next >");
       display.show();
 
       userState++;
@@ -505,7 +505,7 @@ void UserInput::calibrateDoor()
 
         display.clear();
         display.println("Move down");
-        display.println("Next >");
+        display.print("Next >");
         display.show();
 
         userState++;
