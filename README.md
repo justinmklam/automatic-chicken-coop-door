@@ -16,3 +16,7 @@ Automatic chicken coop door for my backyard egg layers. Modeled after the commer
     - [SSD1306 1.2.9](https://github.com/adafruit/Adafruit_SSD1306)
     - [GFX 1.4.2](https://github.com/adafruit/Adafruit-GFX-Library)
 - [BatterySense](https://github.com/rlogiacco/BatterySense)
+
+## How It Works
+
+The main program sets alarms to wake up from sleep based on sunrise/sunset times (from [here](https://www.timeanddate.com/sun/canada/vancouver?month=1&year=2019)). These times are consistent year after year, and is more reliable than using a light sensor which can be finicky to adjust for street lamps, headlights from passing cars, etc.
