@@ -362,8 +362,8 @@ void SunriseSunsetAlarms::setAlarm()
   uint8_t currentMinute = rtc.now().minute();
   uint8_t alarmHour, alarmMinute;
 
-  bool isBeforeSunrise = (currentHour < SUNRISE_TIMES[currentMonthIndex].hour) && (currentMinute < SUNRISE_TIMES[currentMonthIndex].minute);
-  bool isAfterSunset = (currentHour > SUNSET_TIMES[currentMonthIndex].hour) && (currentMinute > SUNSET_TIMES[currentMonthIndex].minute);
+  bool isBeforeSunrise = (currentHour <= SUNRISE_TIMES[currentMonthIndex].hour) && (currentMinute <= SUNRISE_TIMES[currentMonthIndex].minute);
+  bool isAfterSunset = (currentHour >= SUNSET_TIMES[currentMonthIndex].hour) && (currentMinute >= SUNSET_TIMES[currentMonthIndex].minute);
 
   if (isBeforeSunrise || isAfterSunset) {
     alarmHour = SUNRISE_TIMES[currentMonthIndex].hour - sunriseBufferHour;
