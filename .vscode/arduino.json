@@ -3,6 +3,6 @@
     "board": "arduino:avr:pro",
     "output": "build",
     "port": "/dev/ttyUSB0",
-    "sketch": "chicken_door_controller/chicken_door_controller.ino",
+    "sketch": "ChickenDoorController/ChickenDoorController.ino",
     "configuration": "cpu=16MHzatmega328"
 }
