@@ -358,7 +358,7 @@ public:
 private:
   const uint32_t alarmUpdateIntervalMs = 5000;
   const uint8_t sunriseBufferHour = 0;
-  const uint8_t sunsetBufferHour = 2;
+  const uint8_t sunsetBufferHour = 1;
   SleepMode *ptrSleep;
 };
 
