@@ -379,6 +379,7 @@ void SunriseSunsetAlarms::setAlarm()
 {
   // loggerln("SunriseSunsetAlarms.setAlarm");
 
+  // TODO: Handle daylight savings time (since sunrise/sunset times do)
   uint8_t currentMonthIndex = rtc.now().month() - 1;
   uint8_t currentHour = rtc.now().hour();
   uint8_t currentMinute = rtc.now().minute();
