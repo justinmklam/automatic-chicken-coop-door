@@ -5,25 +5,25 @@
 
 class Rtc
 {
-  private:
-    RTC_DS3231 *rtc;
-    DateTime current;
+public:
+  Rtc();
 
-    uint8_t month, day, hour, minute;
-    uint16_t year;
+  void begin();
 
-  public:
-    Rtc();
+  DateTime now();
+  void get_datestamp_str(char *buffer);
+  void get_timestamp_str(char *buffer);
 
-    void begin();
+  void clear_alarms();
+  void set_alarm(uint8_t alarm_number, uint8_t hour, uint8_t minute, uint8_t second);
+  void clear_alarm(uint8_t alarm_number);
 
-    DateTime now();
-    void get_datestamp_str(char *buffer);
-    void get_timestamp_str(char *buffer);
+private:
+  RTC_DS3231 *rtc;
+  DateTime current;
 
-    void clear_alarms();
-    void set_alarm(uint8_t alarm_number, uint8_t hour, uint8_t minute, uint8_t second);
-    void clear_alarm(uint8_t alarm_number);
+  uint8_t month, day, hour, minute;
+  uint16_t year;
 };
 
 #endif

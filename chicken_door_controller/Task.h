@@ -20,7 +20,7 @@
  */
 class Task {
 /*
-*	Newbie Note: The "= 0;" following each virtual method 
+*	Newbie Note: The "= 0;" following each virtual method
 *	in the Task Class makes it an "abstract" or "pure virtual"
 *	method in C++. These methods *must* be defined/implemented in the
 *	derived class. These are *only* Task Class. -KG 3-19-2019
@@ -103,7 +103,7 @@ public:
     inline uint32_t getRunTime() { return runTime; }
 
 protected:
-    
+
     uint32_t runTime;   // The  system clock tick when the task can next run.
 };
 

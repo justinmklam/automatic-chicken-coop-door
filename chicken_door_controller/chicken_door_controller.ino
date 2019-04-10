@@ -10,13 +10,13 @@
 #include "rtc_ds3231.h"
 #include "motor_tb6612.h"
 
-Rtc rtc;      //we are using the DS3231 RTC
+Rtc rtc;
 Ssd1306 display;
 MotorTb6612 motor;
 
-const uint8_t ALARM_NUMBER = 1;  // two alarms available, but we just need one
+const uint8_t ALARM_NUMBER = 1; // two alarms available, but we just need one
 const uint8_t ALARM_PIN = 2;    //use interrupt 0 (pin 2) and run function wakeUp when pin 2 gets LOW
-const uint8_t LED_PIN = 13;    //use arduino on-board led for indicating sleep or wakeup status
+const uint8_t LED_PIN = 13;     //use arduino on-board led for indicating sleep or wakeup status
 
 const uint8_t BUTTON_PIN_LEFT = 10;
 const uint8_t BUTTON_PIN_MIDDLE = 3;
@@ -100,6 +100,7 @@ public:
   void setOpen();
   void setClose();
   virtual void run(uint32_t now);
+
 private:
   bool stateDoorOpen = EEPROMRead8bit(EEPROM_ADDR_DOOR_STATUS);
   bool setDoorOpen = false;
@@ -113,11 +114,13 @@ DoorControl::DoorControl() : TriggeredTask()
 
 void DoorControl::run(uint32_t now)
 {
-  if (setDoorOpen) {
+  if (setDoorOpen)
+  {
     open();
     setDoorOpen = false;
   }
-  else if (setDoorClose) {
+  else if (setDoorClose)
+  {
     close();
     setDoorClose = false;
   }
@@ -139,12 +142,14 @@ void DoorControl::setClose()
 
 void DoorControl::open()
 {
-  if (stateDoorOpen) {
+  if (stateDoorOpen)
+  {
     loggerln("DoorControl: Already open");
     return;
   }
 
-  for (int i=0; i < DOOR_OPEN_CLOSE_DISTANCE; i++){
+  for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
+  {
     motor.up();
     delay(REFRESH_INTERVAL_MS);
   }
@@ -157,12 +162,14 @@ void DoorControl::open()
 
 void DoorControl::close()
 {
-  if (!stateDoorOpen) {
+  if (!stateDoorOpen)
+  {
     loggerln("DoorControl: Already closed");
     return;
   }
 
-  for (int i=0; i < DOOR_OPEN_CLOSE_DISTANCE; i++){
+  for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
+  {
     motor.down();
     delay(REFRESH_INTERVAL_MS);
   }
@@ -202,7 +209,7 @@ private:
 };
 
 SleepMode::SleepMode(DoorControl *_ptrDoorControl) : TriggeredTask(),
-  ptrDoorControl(_ptrDoorControl)
+                                                     ptrDoorControl(_ptrDoorControl)
 
 {
   loggerln("SleepMode: Constructed");
@@ -215,32 +222,38 @@ void SleepMode::run(uint32_t now)
 {
   // NO LOG STATEMENTS ALLOWED HERE
 
-  if (sleepFromAlarm) {
+  if (sleepFromAlarm)
+  {
     attachPinInterrupt(ALARM_PIN);
 
     enableSleep = true;
   }
-  if (sleepFromUserInactivity) {
+  if (sleepFromUserInactivity)
+  {
     attachPinInterrupt(BUTTON_PIN_MIDDLE);
 
     enableSleep = true;
   }
 
-  if (enableSleep) {
+  if (enableSleep)
+  {
     powerDown();
-    wakeUp();   // Resumes here after sleep
+    wakeUp(); // Resumes here after sleep
 
-    if (sleepFromAlarm) {
+    if (sleepFromAlarm)
+    {
       isAlarmTriggered = controlDoorFromAlarm();
 
-      if (isAlarmTriggered) {
+      if (isAlarmTriggered)
+      {
         rtc.clear_alarm(ALARM_NUMBER);
         detachPinInterrupt(ALARM_PIN);
 
         sleepFromAlarm = false;
       }
     }
-    if (sleepFromUserInactivity) {
+    if (sleepFromUserInactivity)
+    {
       detachPinInterrupt(BUTTON_PIN_MIDDLE);
       sleepFromUserInactivity = false;
     }
@@ -249,7 +262,8 @@ void SleepMode::run(uint32_t now)
   resetRunnable();
 }
 
-void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute) {
+void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute)
+{
   logger("SleepMode.enableSleepFromAlarm: ");
   logger(hour);
   logger(":");
@@ -264,20 +278,24 @@ void SleepMode::enableSleepFromAlarm(uint8_t hour, uint8_t minute) {
   rtc.set_alarm(ALARM_NUMBER, hour, minute, 0);
 }
 
-bool SleepMode::controlDoorFromAlarm() {
+bool SleepMode::controlDoorFromAlarm()
+{
   // NO LOG STATEMENTS ALLOWED HERE
 
   bool alarmTriggered = false;
 
   // Check if woken up by alarm
-  if (rtc.now().hour() == alarmHour && rtc.now().minute() == alarmMinute) {
+  if (rtc.now().hour() == alarmHour && rtc.now().minute() == alarmMinute)
+  {
     alarmTriggered = true;
     // Before noon is morning, so open door
-    if (rtc.now().hour() < 12) {
+    if (rtc.now().hour() < 12)
+    {
       ptrDoorControl->setOpen();
       ptrDoorControl->setRunnable();
     }
-    else {
+    else
+    {
       ptrDoorControl->setClose();
       ptrDoorControl->setRunnable();
     }
@@ -285,42 +303,46 @@ bool SleepMode::controlDoorFromAlarm() {
   return alarmTriggered;
 }
 
-void SleepMode::enableSleepFromUserInactivity() {
+void SleepMode::enableSleepFromUserInactivity()
+{
   loggerln("SleepMode.enableSleepFromUserInactivity");
 
   sleepFromUserInactivity = true;
 }
 
-void SleepMode::attachPinInterrupt(uint8_t pinNumber) {
+void SleepMode::attachPinInterrupt(uint8_t pinNumber)
+{
   logger("SleepMode.attachPinInterrupt: ");
   loggerln(pinNumber);
 
   attachInterrupt(
-    digitalPinToInterrupt(pinNumber),
-    wakeUpInterruptHandler,
-    CHANGE
-  );
+      digitalPinToInterrupt(pinNumber),
+      wakeUpInterruptHandler,
+      CHANGE);
 }
 
-void SleepMode::detachPinInterrupt(uint8_t pinNumber) {
+void SleepMode::detachPinInterrupt(uint8_t pinNumber)
+{
   logger("SleepMode.detachPinInterrupt: ");
   loggerln(pinNumber);
 
   detachInterrupt(digitalPinToInterrupt(pinNumber));
 }
 
-void SleepMode::powerDown() {
+void SleepMode::powerDown()
+{
   loggerln("SleepMode.powerDown");
 
   display.sleep();
   LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
 
-void SleepMode::wakeUp() {
+void SleepMode::wakeUp()
+{
   display.wake();
 }
 
-void SleepMode::wakeUpInterruptHandler()        // here the interrupt is handled after wakeup
+void SleepMode::wakeUpInterruptHandler() // here the interrupt is handled after wakeup
 {
 }
 
@@ -341,8 +363,8 @@ private:
 };
 
 SunriseSunsetAlarms::SunriseSunsetAlarms(SleepMode *_ptrSleep)
-  : TimedTask(millis()),
-  ptrSleep(_ptrSleep)
+    : TimedTask(millis()),
+      ptrSleep(_ptrSleep)
 {
   loggerln("SunriseSunsetAlarms: Constructed");
 }
@@ -365,11 +387,13 @@ void SunriseSunsetAlarms::setAlarm()
   bool isBeforeSunrise = (currentHour <= SUNRISE_TIMES[currentMonthIndex].hour) && (currentMinute <= SUNRISE_TIMES[currentMonthIndex].minute);
   bool isAfterSunset = (currentHour >= SUNSET_TIMES[currentMonthIndex].hour) && (currentMinute >= SUNSET_TIMES[currentMonthIndex].minute);
 
-  if (isBeforeSunrise || isAfterSunset) {
+  if (isBeforeSunrise || isAfterSunset)
+  {
     alarmHour = SUNRISE_TIMES[currentMonthIndex].hour - sunriseBufferHour;
     alarmMinute = SUNRISE_TIMES[currentMonthIndex].minute;
   }
-  else {
+  else
+  {
     alarmHour = SUNSET_TIMES[currentMonthIndex].hour + sunsetBufferHour;
     alarmMinute = SUNSET_TIMES[currentMonthIndex].minute;
   }
@@ -386,7 +410,6 @@ public:
   virtual void run(uint32_t now);
 
 private:
-
   void checkInactivity(bool isButtonPressed);
   void calibrateDoor();
 
@@ -414,19 +437,18 @@ private:
   DoorControl *ptrDoorControl;
 };
 
-UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay, DoorControl *_ptrDoorControl) :
-  TimedTask(millis()),
-  ptrSleep(_ptrSleep),
-  ptrDisplay(_ptrDisplay),
-  ptrDoorControl(_ptrDoorControl)
+UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay, DoorControl *_ptrDoorControl) : TimedTask(millis()),
+                                                                                                       ptrSleep(_ptrSleep),
+                                                                                                       ptrDisplay(_ptrDisplay),
+                                                                                                       ptrDoorControl(_ptrDoorControl)
 {
   loggerln("UserInput: Constructed");
 
-    pinMode(BUTTON_PIN_LEFT, INPUT);
-    pinMode(BUTTON_PIN_MIDDLE, INPUT);
-    pinMode(BUTTON_PIN_RIGHT, INPUT);
+  pinMode(BUTTON_PIN_LEFT, INPUT);
+  pinMode(BUTTON_PIN_MIDDLE, INPUT);
+  pinMode(BUTTON_PIN_RIGHT, INPUT);
 
-    previousMillis = millis();
+  previousMillis = millis();
 }
 
 void UserInput::run(uint32_t now)
@@ -437,14 +459,18 @@ void UserInput::run(uint32_t now)
 
   isButtonPressed = buttonStateLeft == BUTTON_STATE_PRESSED || buttonStateMid == BUTTON_STATE_PRESSED || buttonStateRight == BUTTON_STATE_PRESSED;
 
-  if (calibrationMode == true) {
+  if (calibrationMode == true)
+  {
     calibrateDoor();
   }
-  else {
-    if (buttonStateMid == BUTTON_STATE_PRESSED) {
+  else
+  {
+    if (buttonStateMid == BUTTON_STATE_PRESSED)
+    {
       calibrationButtonPressedCounter++;
 
-      if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold) {
+      if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold)
+      {
         ptrDisplay->pauseMainScreen();
 
         calibrationButtonPressedCounter = 0;
@@ -457,15 +483,19 @@ void UserInput::run(uint32_t now)
       }
 
       // ptrSleep->setRunnable();
-    } else {
+    }
+    else
+    {
       // turn LED off:
     }
 
-    if (buttonStateLeft == BUTTON_STATE_PRESSED) {
+    if (buttonStateLeft == BUTTON_STATE_PRESSED)
+    {
       ptrDoorControl->setOpen();
       ptrDoorControl->setRunnable();
     }
-    else if (buttonStateRight == BUTTON_STATE_PRESSED) {
+    else if (buttonStateRight == BUTTON_STATE_PRESSED)
+    {
       ptrDoorControl->setClose();
       ptrDoorControl->setRunnable();
     }
@@ -477,102 +507,115 @@ void UserInput::run(uint32_t now)
 
 void UserInput::calibrateDoor()
 {
-  switch(userState) {
-    default:
+  switch (userState)
+  {
+  default:
+    display.clear();
+    display.println("Move up");
+    display.print("Next >");
+    display.show();
+
+    userState++;
+
+    break;
+
+  case 1:
+    buttonStateLeft = digitalRead(BUTTON_PIN_LEFT);
+    buttonStateMid = digitalRead(BUTTON_PIN_MIDDLE);
+    buttonStateRight = digitalRead(BUTTON_PIN_RIGHT);
+
+    if (buttonStateLeft == BUTTON_STATE_PRESSED)
+    {
+      motor.up();
+    }
+    else if (buttonStateRight == BUTTON_STATE_PRESSED)
+    {
+      motor.down();
+    }
+    else
+    {
+      motor.brake();
+    }
+
+    if (buttonStateMid == BUTTON_STATE_PRESSED)
+    {
+      DOOR_OPEN_CLOSE_DISTANCE = 0;
+
       display.clear();
-      display.println("Move up");
+      display.println("Move down");
       display.print("Next >");
       display.show();
 
       userState++;
+    }
 
-      break;
+    break;
 
-    case 1:
-      buttonStateLeft = digitalRead(BUTTON_PIN_LEFT);
-      buttonStateMid = digitalRead(BUTTON_PIN_MIDDLE);
-      buttonStateRight = digitalRead(BUTTON_PIN_RIGHT);
+  case 2:
+    buttonStateLeft = digitalRead(BUTTON_PIN_LEFT);
+    buttonStateMid = digitalRead(BUTTON_PIN_MIDDLE);
+    buttonStateRight = digitalRead(BUTTON_PIN_RIGHT);
 
-      if (buttonStateLeft == BUTTON_STATE_PRESSED) {
-        motor.up();
-      }
-      else if (buttonStateRight == BUTTON_STATE_PRESSED) {
+    if (buttonStateLeft == BUTTON_STATE_PRESSED)
+    {
+      motor.up();
+      DOOR_OPEN_CLOSE_DISTANCE++;
+    }
+    else if (buttonStateRight == BUTTON_STATE_PRESSED)
+    {
+      if (DOOR_OPEN_CLOSE_DISTANCE > 0)
+      {
         motor.down();
+        DOOR_OPEN_CLOSE_DISTANCE--;
       }
-      else {
+      else
+      {
         motor.brake();
       }
+    }
+    else
+    {
+      motor.brake();
+    }
 
-      if (buttonStateMid == BUTTON_STATE_PRESSED) {
-        DOOR_OPEN_CLOSE_DISTANCE = 0;
+    if (buttonStateMid == BUTTON_STATE_PRESSED)
+    {
+      display.clear();
+      display.println("Complete");
+      display.print(DOOR_OPEN_CLOSE_DISTANCE);
+      display.show();
 
-        display.clear();
-        display.println("Move down");
-        display.print("Next >");
-        display.show();
+      EEPROMWrite32bit(EEPROM_ADDR_DOOR_DISTANCE, DOOR_OPEN_CLOSE_DISTANCE);
 
-        userState++;
-      }
+      delay(1000);
 
-      break;
+      doorStateOpen = false;
+      userState++;
+    }
 
-    case 2:
-      buttonStateLeft = digitalRead(BUTTON_PIN_LEFT);
-      buttonStateMid = digitalRead(BUTTON_PIN_MIDDLE);
-      buttonStateRight = digitalRead(BUTTON_PIN_RIGHT);
+    break;
 
-      if (buttonStateLeft == BUTTON_STATE_PRESSED) {
-        motor.up();
-        DOOR_OPEN_CLOSE_DISTANCE++;
-      }
-      else if (buttonStateRight == BUTTON_STATE_PRESSED) {
-        if (DOOR_OPEN_CLOSE_DISTANCE > 0) {
-          motor.down();
-          DOOR_OPEN_CLOSE_DISTANCE--;
-        }
-        else {
-          motor.brake();
-        }
-      }
-      else {
-        motor.brake();
-      }
+  case 3:
+    userState = 0;
+    calibrationMode = false;
+    ptrDisplay->resumeMainScreen();
 
-      if (buttonStateMid == BUTTON_STATE_PRESSED) {
-        display.clear();
-        display.println("Complete");
-        display.print(DOOR_OPEN_CLOSE_DISTANCE);
-        display.show();
-
-        EEPROMWrite32bit(EEPROM_ADDR_DOOR_DISTANCE, DOOR_OPEN_CLOSE_DISTANCE);
-
-        delay(1000);
-
-        doorStateOpen = false;
-        userState++;
-      }
-
-      break;
-
-    case 3:
-      userState = 0;
-      calibrationMode = false;
-      ptrDisplay->resumeMainScreen();
-
-      break;
-
+    break;
   }
 }
 
 void UserInput::checkInactivity(bool isButtonPressed)
 {
-  if (isButtonPressed) {
+  if (isButtonPressed)
+  {
     inactivityCounter = 0;
   }
-  else {
+  else
+  {
     inactivityCounter++;
 
-    if (inactivityCounter >= intervalInactive) {
+    if (inactivityCounter >= intervalInactive)
+    {
       loggerln("UserInput.checkInactivity: Detected");
 
       inactivityCounter = 0;
@@ -585,11 +628,13 @@ void UserInput::checkInactivity(bool isButtonPressed)
 
 /*************************************************************************/
 
-void setup() {
+void setup()
+{
   loggerBegin();
 }
 
-void loop() {
+void loop()
+{
 
   loggerln("main: Starting");
 
@@ -601,16 +646,14 @@ void loop() {
 
   // Order determines task priority
   Task *tasks[] = {
-    &userInput,
-    &updateDisplay,
-    &sleepMode,
-    &doorControl,
-    &sunAlarms
-  };
+      &userInput,
+      &updateDisplay,
+      &sleepMode,
+      &doorControl,
+      &sunAlarms};
 
   TaskScheduler scheduler(tasks, NUM_TASKS(tasks));
 
   loggerln("main: Running tasks");
   scheduler.runTasks();
-
 }

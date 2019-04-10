@@ -17,7 +17,7 @@ void EEPROMWrite32bit(uint8_t address, uint32_t value)
   bytes[2] = (value >> 8) & 0xFF;
   bytes[3] = value & 0xFF;
 
-  for (int i=0; i < 4; i++)
+  for (int i = 0; i < 4; i++)
   {
     EEPROM.write(address + i, bytes[i]);
   }
@@ -28,7 +28,7 @@ uint32_t EEPROMRead32bit(uint8_t address)
   uint32_t bytes[4];
   uint32_t value;
 
-  for (int i=0; i < 4; i++)
+  for (int i = 0; i < 4; i++)
   {
     bytes[i] = EEPROM.read(address + i);
   }

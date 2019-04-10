@@ -6,11 +6,13 @@
 #include "Task.h"
 
 // Virtual.
-bool TriggeredTask::canRun(uint32_t now) {
-    return runFlag;
+bool TriggeredTask::canRun(uint32_t now)
+{
+  return runFlag;
 }
 
 // Virtual.
-bool TimedTask::canRun(uint32_t now) {
-    return now >= runTime;
+bool TimedTask::canRun(uint32_t now)
+{
+  return now >= runTime;
 }

@@ -18,15 +18,15 @@ const int offsetB = 1;
 
 class MotorTb6612
 {
-private:
-    Motor *motor;
-
 public:
-    MotorTb6612();
-    void up();
-    void down();
-    void brake();
-    void standby();
+  MotorTb6612();
+  void up();
+  void down();
+  void brake();
+  void standby();
+
+private:
+  Motor *motor;
 };
 
 #endif
