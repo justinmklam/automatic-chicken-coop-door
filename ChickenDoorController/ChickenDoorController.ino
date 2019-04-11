@@ -387,7 +387,7 @@ void SunriseSunsetAlarms::setAlarm()
 
   bool isBeforeSunrise = (currentHour < SUNRISE_TIMES[currentMonthIndex].hour) ||
                          ((currentHour == SUNRISE_TIMES[currentMonthIndex].hour) &&
-                          (currentMinute <= SUNRISE_TIMES[currentMonthIndex].minute));
+                          (currentMinute < SUNRISE_TIMES[currentMonthIndex].minute));
 
   bool isAfterSunset = (currentHour > SUNSET_TIMES[currentMonthIndex].hour) ||
                        ((currentHour == SUNSET_TIMES[currentMonthIndex].hour) &&
