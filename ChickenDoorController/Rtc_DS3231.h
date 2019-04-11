@@ -13,6 +13,7 @@ public:
   DateTime now();
   void get_datestamp_str(char *buffer);
   void get_timestamp_str(char *buffer);
+  void set_daylight_saving_time(bool state);
 
   void clear_alarms();
   void set_alarm(uint8_t alarm_number, uint8_t hour, uint8_t minute, uint8_t second);

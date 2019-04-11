@@ -26,10 +26,12 @@ const uint8_t BUTTON_PIN_RIGHT = 12;
 const uint8_t BUTTON_STATE_DEFAULT = HIGH;
 const uint8_t BUTTON_STATE_PRESSED = LOW;
 
-const uint8_t EEPROM_ADDR_DOOR_STATUS = 0;
-const uint8_t EEPROM_ADDR_DOOR_DISTANCE = 1;
+const uint8_t EEPROM_ADDR_DAYLIGHT_SAVINGS = 0;
+const uint8_t EEPROM_ADDR_DOOR_STATUS = 1;
+const uint8_t EEPROM_ADDR_DOOR_DISTANCE = 2; // This takes 4 registers since 32 bit value
 
 uint32_t DOOR_OPEN_CLOSE_DISTANCE = EEPROMRead32bit(EEPROM_ADDR_DOOR_DISTANCE);
+bool DAYLIGHT_SAVING_TIME_ENABLED = EEPROMRead8bit(EEPROM_ADDR_DAYLIGHT_SAVINGS);
 const uint16_t REFRESH_INTERVAL_MS = 100;
 
 int NEXT_ALARM_HOUR = 0;
@@ -418,6 +420,7 @@ public:
 private:
   void checkInactivity(bool isButtonPressed);
   void calibrateDoor();
+  void setDaylightSavingTime();
 
   uint8_t userState = 0;
   bool doorStateOpen = false;
@@ -434,6 +437,7 @@ private:
   uint32_t calibrationButtonPressedCounter = 0;
 
   const uint16_t calibrationButtonPressedThreshold = 20;
+  const uint16_t daylightSavingsButtonPressedThreshold = 30;
   const uint16_t intervalInactive = 100;
 
   // const uint16_t inactivityInterval =
@@ -475,24 +479,41 @@ void UserInput::run(uint32_t now)
     {
       calibrationButtonPressedCounter++;
 
-      if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold)
+      // Super long press is to enable/disable daylight savings
+      if (calibrationButtonPressedCounter >= daylightSavingsButtonPressedThreshold)
+      {
+        display.clear();
+        display.println("Toggle DST");
+        display.show();
+      }
+      // Regular long press is to enter calibration mode
+      else if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold)
       {
         ptrDisplay->pauseMainScreen();
-
-        calibrationButtonPressedCounter = 0;
-        calibrationMode = true;
 
         display.clear();
         display.println("Calibrate");
         display.show();
-        delay(2000);
       }
-
-      // ptrSleep->setRunnable();
     }
     else
     {
-      // turn LED off:
+      // Enter the different modes on button release
+      if (calibrationButtonPressedCounter >= daylightSavingsButtonPressedThreshold)
+      {
+        calibrationButtonPressedCounter = 0;
+
+        delay(1000);
+
+        setDaylightSavingTime();
+      }
+      else if (calibrationButtonPressedCounter >= calibrationButtonPressedThreshold)
+      {
+        calibrationButtonPressedCounter = 0;
+        calibrationMode = true;
+
+        delay(1000);
+      }
     }
 
     if (buttonStateLeft == BUTTON_STATE_PRESSED)
@@ -509,6 +530,30 @@ void UserInput::run(uint32_t now)
 
   checkInactivity(isButtonPressed);
   incRunTime(REFRESH_INTERVAL_MS);
+}
+
+void UserInput::setDaylightSavingTime()
+{
+  display.clear();
+
+  if (DAYLIGHT_SAVING_TIME_ENABLED) {
+    display.println("DST > OFF");
+    rtc.set_daylight_saving_time(false);
+    DAYLIGHT_SAVING_TIME_ENABLED = false;
+    EEPROMWrite8bit(EEPROM_ADDR_DAYLIGHT_SAVINGS, false);
+  }
+  else {
+    display.println("DST > ON");
+    rtc.set_daylight_saving_time(true);
+    DAYLIGHT_SAVING_TIME_ENABLED = true;
+    EEPROMWrite8bit(EEPROM_ADDR_DAYLIGHT_SAVINGS, true);
+  }
+
+  display.show();
+
+  delay(2000);
+
+  ptrDisplay->resumeMainScreen();
 }
 
 void UserInput::calibrateDoor()

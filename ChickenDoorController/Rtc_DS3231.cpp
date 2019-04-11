@@ -28,6 +28,28 @@ DateTime Rtc::now()
   return rtc->now();
 }
 
+void Rtc::set_daylight_saving_time(bool state)
+{
+  uint8_t new_hour;
+  current = rtc->now();
+
+  if (state) {
+    new_hour = current.hour() + 1;
+  }
+  else {
+    new_hour = current.hour() - 1;
+  }
+
+  rtc->adjust(DateTime(
+    current.year(),
+    current.month(),
+    current.day(),
+    new_hour,
+    current.minute(),
+    current.second()
+  ));
+}
+
 void Rtc::get_datestamp_str(char *buffer)
 {
   // Size of string should be no more than 8 characters
