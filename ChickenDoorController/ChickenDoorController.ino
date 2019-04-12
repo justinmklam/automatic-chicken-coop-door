@@ -30,8 +30,10 @@ const uint8_t EEPROM_ADDR_DAYLIGHT_SAVINGS = 0;
 const uint8_t EEPROM_ADDR_DOOR_STATUS = 1;
 const uint8_t EEPROM_ADDR_DOOR_DISTANCE = 2; // This takes 4 registers since 32 bit value
 
+bool DOOR_STATE_OPEN = EEPROMRead8bit(EEPROM_ADDR_DOOR_STATUS);
 uint32_t DOOR_OPEN_CLOSE_DISTANCE = EEPROMRead32bit(EEPROM_ADDR_DOOR_DISTANCE);
 bool DAYLIGHT_SAVING_TIME_ENABLED = EEPROMRead8bit(EEPROM_ADDR_DAYLIGHT_SAVINGS);
+
 const uint16_t REFRESH_INTERVAL_MS = 100;
 
 int NEXT_ALARM_HOUR = 0;
@@ -104,7 +106,6 @@ public:
   virtual void run(uint32_t now);
 
 private:
-  bool stateDoorOpen = EEPROMRead8bit(EEPROM_ADDR_DOOR_STATUS);
   bool setDoorOpen = false;
   bool setDoorClose = false;
 };
@@ -144,29 +145,9 @@ void DoorControl::setClose()
 
 void DoorControl::open()
 {
-  if (stateDoorOpen)
+  if (DOOR_STATE_OPEN)
   {
     loggerln("DoorControl: Already open");
-    return;
-  }
-
-  for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
-  {
-    motor.up();
-    delay(REFRESH_INTERVAL_MS);
-  }
-
-  motor.brake();
-  stateDoorOpen = true;
-  EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, stateDoorOpen);
-  loggerln("DoorControl: Opened");
-}
-
-void DoorControl::close()
-{
-  if (!stateDoorOpen)
-  {
-    loggerln("DoorControl: Already closed");
     return;
   }
 
@@ -177,8 +158,28 @@ void DoorControl::close()
   }
 
   motor.brake();
-  stateDoorOpen = false;
-  EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, stateDoorOpen);
+  DOOR_STATE_OPEN = true;
+  EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, DOOR_STATE_OPEN);
+  loggerln("DoorControl: Opened");
+}
+
+void DoorControl::close()
+{
+  if (!DOOR_STATE_OPEN)
+  {
+    loggerln("DoorControl: Already closed");
+    return;
+  }
+
+  for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
+  {
+    motor.up();
+    delay(REFRESH_INTERVAL_MS);
+  }
+
+  motor.brake();
+  DOOR_STATE_OPEN = false;
+  EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, DOOR_STATE_OPEN);
   loggerln("DoorControl: Closed");
 }
 
@@ -423,7 +424,6 @@ private:
   void setDaylightSavingTime();
 
   uint8_t userState = 0;
-  bool doorStateOpen = false;
 
   bool calibrationMode = false;
   bool isButtonPressed = false;
@@ -439,8 +439,6 @@ private:
   const uint16_t calibrationButtonPressedThreshold = 20;
   const uint16_t daylightSavingsButtonPressedThreshold = 30;
   const uint16_t intervalInactive = 100;
-
-  // const uint16_t inactivityInterval =
 
   SleepMode *ptrSleep;
   UpdateDisplay *ptrDisplay;
@@ -536,13 +534,15 @@ void UserInput::setDaylightSavingTime()
 {
   display.clear();
 
-  if (DAYLIGHT_SAVING_TIME_ENABLED) {
+  if (DAYLIGHT_SAVING_TIME_ENABLED)
+  {
     display.println("DST > OFF");
     rtc.set_daylight_saving_time(false);
     DAYLIGHT_SAVING_TIME_ENABLED = false;
     EEPROMWrite8bit(EEPROM_ADDR_DAYLIGHT_SAVINGS, false);
   }
-  else {
+  else
+  {
     display.println("DST > ON");
     rtc.set_daylight_saving_time(true);
     DAYLIGHT_SAVING_TIME_ENABLED = true;
@@ -632,15 +632,15 @@ void UserInput::calibrateDoor()
     if (buttonStateMid == BUTTON_STATE_PRESSED)
     {
       display.clear();
-      display.println("Complete");
-      display.print(DOOR_OPEN_CLOSE_DISTANCE);
-      display.show();
+        display.println("Complete");
+        display.print(DOOR_OPEN_CLOSE_DISTANCE);
+        display.show();
 
-      EEPROMWrite32bit(EEPROM_ADDR_DOOR_DISTANCE, DOOR_OPEN_CLOSE_DISTANCE);
+        EEPROMWrite32bit(EEPROM_ADDR_DOOR_DISTANCE, DOOR_OPEN_CLOSE_DISTANCE);
+        DOOR_STATE_OPEN = false;
 
       delay(1000);
 
-      doorStateOpen = false;
       userState++;
     }
 
