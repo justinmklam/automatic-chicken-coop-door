@@ -567,6 +567,8 @@ void UserInput::calibrateDoor()
     display.print("Next >");
     display.show();
 
+    delay(250);
+
     userState++;
 
     break;
@@ -597,6 +599,8 @@ void UserInput::calibrateDoor()
       display.println("Move down");
       display.print("Next >");
       display.show();
+
+      delay(250);
 
       userState++;
     }
@@ -647,7 +651,7 @@ void UserInput::calibrateDoor()
       }
       else
       {
-        display.println("No calibration");
+        display.println("Calibrate\nskipped");
         display.show();
       }
 
@@ -669,7 +673,11 @@ void UserInput::calibrateDoor()
 
 void UserInput::checkInactivity(bool isButtonPressed)
 {
-  if (isButtonPressed)
+  // Don't sleep during calibration mode
+  if (calibrationMode) {
+    return;
+  }
+  else if (isButtonPressed)
   {
     inactivityCounter = 0;
   }
