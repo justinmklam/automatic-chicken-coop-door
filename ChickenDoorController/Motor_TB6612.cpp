@@ -2,7 +2,7 @@
 
 MotorTb6612::MotorTb6612()
 {
-  motor = new Motor(AIN1, AIN2, PWMA, offsetA, STBY);
+  motor = new Motor(AIN1, AIN2, PWMA, DIRECTION, STBY);
 }
 
 void MotorTb6612::up()

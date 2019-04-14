@@ -153,7 +153,7 @@ void DoorControl::open()
 
   for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
   {
-    motor.down();
+    motor.up();
     delay(REFRESH_INTERVAL_MS);
   }
 
@@ -173,7 +173,7 @@ void DoorControl::close()
 
   for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
   {
-    motor.up();
+    motor.down();
     delay(REFRESH_INTERVAL_MS);
   }
 
@@ -578,11 +578,11 @@ void UserInput::calibrateDoor()
 
     if (buttonStateLeft == BUTTON_STATE_PRESSED)
     {
-      motor.up();
+      motor.down();
     }
     else if (buttonStateRight == BUTTON_STATE_PRESSED)
     {
-      motor.down();
+      motor.up();
     }
     else
     {
@@ -610,14 +610,14 @@ void UserInput::calibrateDoor()
 
     if (buttonStateLeft == BUTTON_STATE_PRESSED)
     {
-      motor.up();
+      motor.down();
       doorCalibrationDistance++;
     }
     else if (buttonStateRight == BUTTON_STATE_PRESSED)
     {
       if (doorCalibrationDistance > 0)
       {
-        motor.down();
+        motor.up();
         doorCalibrationDistance--;
       }
       else
@@ -645,7 +645,8 @@ void UserInput::calibrateDoor()
         EEPROMWrite32bit(EEPROM_ADDR_DOOR_DISTANCE, DOOR_OPEN_CLOSE_DISTANCE);
         DOOR_STATE_OPEN = false;
       }
-      else {
+      else
+      {
         display.println("No calibration");
         display.show();
       }
