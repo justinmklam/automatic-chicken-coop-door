@@ -435,6 +435,7 @@ private:
   uint32_t previousMillis;
   uint32_t inactivityCounter = 0;
   uint32_t calibrationButtonPressedCounter = 0;
+  uint32_t doorCalibrationDistance = 0;
 
   const uint16_t calibrationButtonPressedThreshold = 20;
   const uint16_t daylightSavingsButtonPressedThreshold = 30;
@@ -590,7 +591,7 @@ void UserInput::calibrateDoor()
 
     if (buttonStateMid == BUTTON_STATE_PRESSED)
     {
-      DOOR_OPEN_CLOSE_DISTANCE = 0;
+      doorCalibrationDistance = 0;
 
       display.clear();
       display.println("Move down");
@@ -610,14 +611,14 @@ void UserInput::calibrateDoor()
     if (buttonStateLeft == BUTTON_STATE_PRESSED)
     {
       motor.up();
-      DOOR_OPEN_CLOSE_DISTANCE++;
+      doorCalibrationDistance++;
     }
     else if (buttonStateRight == BUTTON_STATE_PRESSED)
     {
-      if (DOOR_OPEN_CLOSE_DISTANCE > 0)
+      if (doorCalibrationDistance > 0)
       {
         motor.down();
-        DOOR_OPEN_CLOSE_DISTANCE--;
+        doorCalibrationDistance--;
       }
       else
       {
@@ -632,12 +633,22 @@ void UserInput::calibrateDoor()
     if (buttonStateMid == BUTTON_STATE_PRESSED)
     {
       display.clear();
+
+      if (doorCalibrationDistance != 0)
+      {
+        DOOR_OPEN_CLOSE_DISTANCE = doorCalibrationDistance;
+
         display.println("Complete");
         display.print(DOOR_OPEN_CLOSE_DISTANCE);
         display.show();
 
         EEPROMWrite32bit(EEPROM_ADDR_DOOR_DISTANCE, DOOR_OPEN_CLOSE_DISTANCE);
         DOOR_STATE_OPEN = false;
+      }
+      else {
+        display.println("No calibration");
+        display.show();
+      }
 
       delay(1000);
 
