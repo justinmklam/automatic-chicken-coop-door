@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name ArduinoProMini)(type Legacy)(uri /home/justin/Documents/kicad-modules/ArduinoProMini.lib)(options "")(descr ""))
+  (lib (name "Chicken Coop Door")(type Legacy)(uri "${KIPRJMOD}/Chicken Coop Door.lib")(options "")(descr ""))
+)
