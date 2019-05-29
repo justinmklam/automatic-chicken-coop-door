@@ -11,11 +11,11 @@ Automatic chicken coop door for my backyard egg layers. Modeled after the commer
 - 6V 10rpm 25GA Brushed DC Motor
 
 ## Dependencies
-- Adafruit libraries:
-    - [RTClib 1.2.1](https://github.com/adafruit/RTClib)
-    - [SSD1306 1.2.9](https://github.com/adafruit/Adafruit_SSD1306)
-    - [GFX 1.4.2](https://github.com/adafruit/Adafruit-GFX-Library)
-- [BatterySense](https://github.com/rlogiacco/BatterySense)
+- [Low Power](https://github.com/rocketscream/Low-Power)
+- [Motor Driver TB6612FNG](https://github.com/sparkfun/SparkFun_TB6612FNG_Arduino_Library)
+- [FabioCuomo-DS3231](https://github.com/FabioCuomo/FabioCuomo-DS3231)
+- [SSD1306 1.2.9](https://github.com/adafruit/Adafruit_SSD1306)
+- [GFX 1.4.2](https://github.com/adafruit/Adafruit-GFX-Library)
 
 ## How It Works
 
