@@ -19,10 +19,10 @@ const uint8_t ALARM_PIN = 2;    //use interrupt 0 (pin 2) and run function wakeU
 const uint8_t LED_PIN = 13;     //use arduino on-board led for indicating sleep or wakeup status
 
 const uint8_t BUTTON_PIN_LEFT = 10;
-const uint8_t BUTTON_PIN_MIDDLE = 11;
+const uint8_t BUTTON_PIN_MIDDLE = 3;
 const uint8_t BUTTON_PIN_RIGHT = 12;
 
-const uint8_t MOTOR_TRANSISTOR_PIN = 3;
+const uint8_t MOTOR_TRANSISTOR_PIN = 5;
 
 // Pullup resistor used
 const uint8_t BUTTON_STATE_DEFAULT = HIGH;
