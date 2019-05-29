@@ -62,7 +62,6 @@ private:
 
 UpdateDisplay::UpdateDisplay() : TimedTask(millis())
 {
-  loggerln("UpdateDisplay: Constructed");
   display.begin();
 }
 
@@ -116,7 +115,6 @@ private:
 
 DoorControl::DoorControl() : TriggeredTask()
 {
-  loggerln("DoorControl: Constructed");
 }
 
 void DoorControl::run(uint32_t now)
@@ -233,7 +231,6 @@ SleepMode::SleepMode(DoorControl *_ptrDoorControl) : TriggeredTask(),
                                                      ptrDoorControl(_ptrDoorControl)
 
 {
-  loggerln("SleepMode: Constructed");
   //Set pin D2 as INPUT for accepting the interrupt signal from DS3231
   pinMode(ALARM_PIN, INPUT);
   rtc.begin();
@@ -387,7 +384,6 @@ SunriseSunsetAlarms::SunriseSunsetAlarms(SleepMode *_ptrSleep)
     : TimedTask(millis()),
       ptrSleep(_ptrSleep)
 {
-  loggerln("SunriseSunsetAlarms: Constructed");
 }
 
 void SunriseSunsetAlarms::run(uint32_t now)
@@ -469,8 +465,6 @@ UserInput::UserInput(SleepMode *_ptrSleep, UpdateDisplay *_ptrDisplay, DoorContr
                                                                                                        ptrDisplay(_ptrDisplay),
                                                                                                        ptrDoorControl(_ptrDoorControl)
 {
-  loggerln("UserInput: Constructed");
-
   pinMode(BUTTON_PIN_LEFT, INPUT);
   pinMode(BUTTON_PIN_MIDDLE, INPUT);
   pinMode(BUTTON_PIN_RIGHT, INPUT);
