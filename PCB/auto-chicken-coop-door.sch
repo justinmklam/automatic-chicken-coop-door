@@ -614,21 +614,21 @@ $EndComp
 Wire Wire Line
 	4100 2250 4150 2250
 Wire Wire Line
-	4750 3750 4900 3750
-Wire Wire Line
-	4650 3850 4900 3850
-Wire Wire Line
-	4650 3500 4650 3850
-Wire Wire Line
 	4550 2450 4550 3250
 Wire Wire Line
 	4550 3250 4750 3250
-Wire Wire Line
-	4750 3250 4750 3750
 Wire Wire Line
 	4150 2650 4850 2650
 Wire Wire Line
 	4150 2250 4150 2650
 Wire Wire Line
 	4850 2250 5550 2250
+Wire Wire Line
+	4650 3500 4650 3750
+Wire Wire Line
+	4650 3750 4900 3750
+Wire Wire Line
+	4750 3250 4750 3850
+Wire Wire Line
+	4750 3850 4900 3850
 $EndSCHEMATC
