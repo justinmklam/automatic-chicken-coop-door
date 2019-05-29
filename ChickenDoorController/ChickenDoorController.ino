@@ -19,8 +19,10 @@ const uint8_t ALARM_PIN = 2;    //use interrupt 0 (pin 2) and run function wakeU
 const uint8_t LED_PIN = 13;     //use arduino on-board led for indicating sleep or wakeup status
 
 const uint8_t BUTTON_PIN_LEFT = 10;
-const uint8_t BUTTON_PIN_MIDDLE = 3;
+const uint8_t BUTTON_PIN_MIDDLE = 11;
 const uint8_t BUTTON_PIN_RIGHT = 12;
+
+const uint8_t MOTOR_TRANSISTOR_PIN = 3;
 
 // Pullup resistor used
 const uint8_t BUTTON_STATE_DEFAULT = HIGH;
@@ -106,6 +108,8 @@ public:
   virtual void run(uint32_t now);
 
 private:
+  void enableMotorPower();
+  void disableMotorPower();
   bool setDoorOpen = false;
   bool setDoorClose = false;
 };
@@ -131,6 +135,16 @@ void DoorControl::run(uint32_t now)
   resetRunnable();
 }
 
+void DoorControl::enableMotorPower()
+{
+  digitalWrite(MOTOR_TRANSISTOR_PIN, HIGH);
+}
+
+void DoorControl::disableMotorPower()
+{
+  digitalWrite(MOTOR_TRANSISTOR_PIN, LOW);
+}
+
 void DoorControl::setOpen()
 {
   loggerln("DoorControl.setOpen");
@@ -153,11 +167,13 @@ void DoorControl::open()
 
   for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
   {
+    enableMotorPower();
     motor.up();
     delay(REFRESH_INTERVAL_MS);
   }
 
   motor.brake();
+  disableMotorPower();
   DOOR_STATE_OPEN = true;
   EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, DOOR_STATE_OPEN);
   loggerln("DoorControl: Opened");
@@ -173,11 +189,13 @@ void DoorControl::close()
 
   for (int i = 0; i < DOOR_OPEN_CLOSE_DISTANCE; i++)
   {
+    enableMotorPower();
     motor.down();
     delay(REFRESH_INTERVAL_MS);
   }
 
   motor.brake();
+  disableMotorPower();
   DOOR_STATE_OPEN = false;
   EEPROMWrite8bit(EEPROM_ADDR_DOOR_STATUS, DOOR_STATE_OPEN);
   loggerln("DoorControl: Closed");
