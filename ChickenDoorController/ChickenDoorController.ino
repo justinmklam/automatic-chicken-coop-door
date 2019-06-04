@@ -115,6 +115,7 @@ private:
 
 DoorControl::DoorControl() : TriggeredTask()
 {
+  disableMotorPower();
 }
 
 void DoorControl::run(uint32_t now)
@@ -135,12 +136,12 @@ void DoorControl::run(uint32_t now)
 
 void DoorControl::enableMotorPower()
 {
-  digitalWrite(MOTOR_TRANSISTOR_PIN, HIGH);
+  digitalWrite(MOTOR_TRANSISTOR_PIN, LOW);
 }
 
 void DoorControl::disableMotorPower()
 {
-  digitalWrite(MOTOR_TRANSISTOR_PIN, LOW);
+  digitalWrite(MOTOR_TRANSISTOR_PIN, HIGH);
 }
 
 void DoorControl::setOpen()
