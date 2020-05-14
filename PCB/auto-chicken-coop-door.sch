@@ -247,7 +247,7 @@ U 1 1 5CE4B214
 P 5650 2600
 F 0 "J1" V 5712 2844 50  0000 L CNN
 F 1 "Programming_Headers" V 5803 2844 50  0000 L CNN
-F 2 "" H 5650 2600 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical" H 5650 2600 50  0001 C CNN
 F 3 "~" H 5650 2600 50  0001 C CNN
 	1    5650 2600
 	0    1    1    0   
@@ -258,8 +258,6 @@ Wire Wire Line
 	5450 2800 5450 3050
 Wire Wire Line
 	5550 3050 5550 2800
-Wire Wire Line
-	5650 2800 5650 3050
 Wire Wire Line
 	5750 3050 5750 2800
 Wire Wire Line
@@ -734,4 +732,6 @@ Wire Wire Line
 Connection ~ 3750 1950
 Wire Wire Line
 	4300 1950 4300 2050
+Wire Wire Line
+	5650 2800 5650 3050
 $EndSCHEMATC
